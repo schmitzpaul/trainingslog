@@ -74,11 +74,6 @@ h2{margin:22px 0 8px;font:600 14px var(--font-head);letter-spacing:.1em;text-tra
 .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg);font-weight:600}
 .chip.plan{border-color:var(--accent)}
 .chip.plan::after{content:"";display:inline-block;width:7px;height:7px;margin-left:7px;border-radius:50%;background:var(--accent);vertical-align:middle}
-.plancard{margin:14px 0 0;padding:12px 14px;border-radius:12px;border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--surface)}
-.plancard.rest{border-left-color:var(--line)}
-.plancard .pk{display:block;font:600 12px var(--font-head);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-.plancard .pt{display:block;margin-top:2px;font:700 22px/1.15 var(--font-head);text-transform:uppercase;letter-spacing:.03em}
-.plancard .ps{display:block;margin-top:4px;font-size:13px;color:var(--muted)}
 
 .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;margin-top:12px}
 .ex-n{margin:0;font:700 23px/1.15 var(--font-head)}
@@ -621,26 +616,11 @@ function exCard(x){
 
 // Wochenplan: Mo & Do Upper, Di & Fr Lower. Nur Vorschlag, alles bleibt eintragbar.
 var WEEK_PLAN={1:'upper',4:'upper',2:'lower',5:'lower'};
-var PLAN_NAME={upper:'Upper Body',lower:'Lower Body'};
-var PLAN_DAYS={upper:'Mo & Do',lower:'Di & Fr'};
 function planFor(iso,groups){
   var p=iso.split('-').map(Number),wd=new Date(p[0],p[1]-1,p[2]).getDay(),k=WEEK_PLAN[wd]||null;
   var g=null;
   if(k)(groups||[]).some(function(x){if(x.toLowerCase().indexOf(k)===0){g=x;return true}});
   return {kind:k,group:g};
-}
-function nextPlanDay(iso){
-  for(var i=1;i<=7;i++){var d=shiftDate(iso,i),q=d.split('-').map(Number),wd=new Date(q[0],q[1]-1,q[2]).getDay();if(WEEK_PLAN[wd])return {date:d,kind:WEEK_PLAN[wd]}}
-  return null;
-}
-function planCard(plan){
-  if(plan.kind){
-    return '<div class="plancard"><span class="pk">Laut Plan · '+PLAN_DAYS[plan.kind]+'</span><span class="pt">'+PLAN_NAME[plan.kind]+'</span>'
-      +'<span class="ps">Andere Übungen findest du unter „Alle“.</span></div>';
-  }
-  var n=nextPlanDay(state.date);
-  return '<div class="plancard rest"><span class="pk">Kein Plantag</span><span class="pt">Freier Tag</span>'
-    +'<span class="ps">'+(n?'Nächstes: '+PLAN_NAME[n.kind]+' am '+esc(wdDate(n.date))+'. ':'')+'Eintragen geht trotzdem.</span></div>';
 }
 function viewTrain(){
   var h=banner()+dateBar();
@@ -656,7 +636,6 @@ function viewTrain(){
   }
   var plan=planFor(state.date,groups);
   if(state.autoFor!==state.date){state.autoFor=state.date;if(plan.group)state.group=plan.group}
-  h+=planCard(plan);
   if(groups.length){
     h+='<div class="chips" role="group" aria-label="Einheit wählen">'
       +'<button class="chip" type="button" data-act="chip" data-g="*" aria-pressed="'+(state.group==='*')+'">Alle</button>'
