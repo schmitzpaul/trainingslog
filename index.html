@@ -88,9 +88,6 @@ h2{margin:22px 0 8px;font:600 14px var(--font-head);letter-spacing:.1em;text-tra
 .x{height:44px;width:44px;border:0;background:none;color:var(--muted);font-size:26px;line-height:1;border-radius:8px}
 .add{width:100%;margin-top:2px;border-style:dashed;color:var(--accent);background:transparent}
 .foot{margin-top:20px;display:flex;gap:8px}
-.donebk{margin-top:16px;padding:14px;border-radius:12px;border:1px solid var(--accent);text-align:center}
-.donebk p{margin:0 0 10px;font:600 15px var(--font-head);letter-spacing:.08em;text-transform:uppercase}
-.donebk .btn{width:100%}
 .foot .btn{flex:1}
 
 .empty{border:1px dashed var(--line);border-radius:10px;padding:22px 16px;text-align:center;margin-top:16px;color:var(--muted)}
@@ -630,9 +627,13 @@ function planDone(plan,act){
   var day=state.days[state.date]||{};
   var ex=act.filter(function(x){return x.groups.indexOf(plan.group)>=0});
   return ex.length>0&&ex.every(function(x){
-    var need=(CFG[x.id]&&CFG[x.id].sets)||1;
-    return validSets((day[x.id]||{}).sets).length>=need;
+    return validSets((day[x.id]||{}).sets).length>=gPlanned(x);
   });
+}
+function todayPlanDone(){
+  var act=state.items.filter(function(x){return !x.removed}),groups=[];
+  act.forEach(function(x){x.groups.forEach(function(g){if(groups.indexOf(g)<0)groups.push(g)})});
+  return planDone(planFor(state.date,groups),act);
 }
 function backedUpToday(){return !!(store&&store.backupAt)&&isoDate(new Date(store.backupAt))===isoDate(new Date())}
 function viewTrain(){
@@ -656,7 +657,6 @@ function viewTrain(){
       +'</div>';
   }
   act.filter(function(x){return state.group==='*'||x.groups.indexOf(state.group)>=0}).forEach(function(x){h+=exCard(x)});
-  if(planDone(plan,act)&&!backedUpToday())h+='<div class="donebk"><p>Training komplett.</p><button class="btn primary" type="button" data-act="bk-export">Backup speichern</button></div>';
   return h+'<div class="foot"><button class="btn" type="button" data-act="edit">Übungen bearbeiten</button></div>';
 }
 function editView(){
@@ -1334,6 +1334,12 @@ function gymView(){
   var x=gItem(state.gx);
   if(!x||x.removed){state.gym=false;state.gmode='work';wakeOff();return viewTrain()}
   var n=gSets(x.id).length,planned=gPlanned(x);
+  if(state.gmode==='backup'){
+    if(backedUpToday()){state.gym=false;state.gmode='work';wakeOff();return viewTrain()}
+    return '<div class="gym"><div class="gmid"><p class="gsub">Training komplett</p><h2 class="gname">Backup</h2><p class="ghint">Sichere die Datei jetzt in iCloud.</p></div>'
+      +'<button class="gsave" type="button" data-act="bk-export">Backup speichern</button>'
+      +'<div class="glinks"><span></span><button class="glink" type="button" data-act="gy-exit">Später</button></div></div>';
+  }
   if(state.gmode==='done'){
     return '<div class="gym"><div class="gmid"><p class="gsub">Geschafft</p><h2 class="gname">'+esc(x.name)+'</h2><p class="ghint">'+n+(n===1?' Satz':' S\u00e4tze')+' heute</p></div>'
       +'<button class="gsave" type="button" data-act="gy-exit">Fertig</button></div>';
@@ -1380,6 +1386,7 @@ app.addEventListener('click',function(e){
     }
     state.gym=true;wakeOn();render();window.scrollTo(0,0);
   }
+  else if(a==='gy-exit'&&state.gmode==='done'&&todayPlanDone()&&!backedUpToday()){state.gmode='backup';render();window.scrollTo(0,0)}
   else if(a==='gy-exit'){state.gym=false;if(state.gmode!=='entry'&&state.gmode!=='pause')state.gmode='work';wakeOff();render()}
   else if(a==='gy-done'){var lastSet=!!x&&gSets(x.id).length+1>=gPlanned(x);state.restOn=!lastSet;if(!lastSet){state.restEnd=Date.now()+REST_MS;state.buzzed=false}state.gmode='entry';render();window.scrollTo(0,0)}
   else if(a==='gy-note'){state.showNote=!state.showNote;render()}
