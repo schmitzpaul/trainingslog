@@ -88,6 +88,9 @@ h2{margin:22px 0 8px;font:600 14px var(--font-head);letter-spacing:.1em;text-tra
 .x{height:44px;width:44px;border:0;background:none;color:var(--muted);font-size:26px;line-height:1;border-radius:8px}
 .add{width:100%;margin-top:2px;border-style:dashed;color:var(--accent);background:transparent}
 .foot{margin-top:20px;display:flex;gap:8px}
+.donebk{margin-top:16px;padding:14px;border-radius:12px;border:1px solid var(--accent);text-align:center}
+.donebk p{margin:0 0 10px;font:600 15px var(--font-head);letter-spacing:.08em;text-transform:uppercase}
+.donebk .btn{width:100%}
 .foot .btn{flex:1}
 
 .empty{border:1px dashed var(--line);border-radius:10px;padding:22px 16px;text-align:center;margin-top:16px;color:var(--muted)}
@@ -497,7 +500,7 @@ function viewBackup(){
 }
 function bkMsg(t,bad){state.bkMsg=t;state.bkBad=!!bad}
 function doExport(){
-  var name='trainingslog-backup-'+bkStamp()+'.json';
+  var name='trainingslog-backup.json';
   var body=JSON.stringify({app:'trainingslog',version:1,exportedAt:new Date().toISOString(),docs:store.docs},null,1);
   var mark=function(){store.backupAt=Date.now();try{persist()}catch(e){}bkMsg('Backup erstellt: '+name);render()};
   var file=null;
@@ -622,6 +625,16 @@ function planFor(iso,groups){
   if(k)(groups||[]).some(function(x){if(x.toLowerCase().indexOf(k)===0){g=x;return true}});
   return {kind:k,group:g};
 }
+function planDone(plan,act){
+  if(!plan.group)return false;
+  var day=state.days[state.date]||{};
+  var ex=act.filter(function(x){return x.groups.indexOf(plan.group)>=0});
+  return ex.length>0&&ex.every(function(x){
+    var need=(CFG[x.id]&&CFG[x.id].sets)||1;
+    return validSets((day[x.id]||{}).sets).length>=need;
+  });
+}
+function backedUpToday(){return !!(store&&store.backupAt)&&isoDate(new Date(store.backupAt))===isoDate(new Date())}
 function viewTrain(){
   var h=banner()+dateBar();
   if(!state.loaded)return h+'<div class="empty">Lade deine Übungen …</div>';
@@ -643,6 +656,7 @@ function viewTrain(){
       +'</div>';
   }
   act.filter(function(x){return state.group==='*'||x.groups.indexOf(state.group)>=0}).forEach(function(x){h+=exCard(x)});
+  if(planDone(plan,act)&&!backedUpToday())h+='<div class="donebk"><p>Training komplett.</p><button class="btn primary" type="button" data-act="bk-export">Backup speichern</button></div>';
   return h+'<div class="foot"><button class="btn" type="button" data-act="edit">Übungen bearbeiten</button></div>';
 }
 function editView(){
