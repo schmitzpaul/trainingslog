@@ -479,7 +479,7 @@ function bkCount(){
 function viewBackup(){
   var c=bkCount(),age=store&&store.backupAt?Math.floor((Date.now()-store.backupAt)/86400000):null;
   var last=!store||!store.backupAt?'Noch nie gesichert.':'Zuletzt gesichert: '+(age===0?'heute':age===1?'gestern':'vor '+age+' Tagen')+'.';
-  var h='<button class="link" type="button" data-tab="train">‹ Zurück zum Training</button><div class="bk"><h2>Backup</h2>'
+  var h='<button class="link" type="button" data-act="bk-back">‹ Zurück zum Training</button><div class="bk"><h2>Backup</h2>'
     +'<p>Deine Einträge liegen nur auf diesem iPhone, nirgendwo sonst. Sichere sie regelmäßig als Datei, zum Beispiel in iCloud Drive.</p>'
     +'<p class="big">'+c.days+' Trainingstage · '+c.sets+' Sätze</p><p class="ok">'+last+'</p>'
     +'<div class="row"><button class="btn primary" type="button" data-act="bk-export">Backup speichern</button></div>'
