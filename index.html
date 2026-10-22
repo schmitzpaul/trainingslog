@@ -233,7 +233,6 @@ body{touch-action:manipulation;overscroll-behavior-y:none}
   <div class="tabs" role="tablist" aria-label="Ansicht">
     <button role="tab" id="tab-train" data-tab="train" aria-selected="true">Training</button>
     <button role="tab" id="tab-hist" data-tab="hist" aria-selected="false">Verlauf</button>
-    <button role="tab" id="tab-backup" data-tab="backup" aria-selected="false">Backup</button>
   </div>
   <main id="app"></main>
 </div>
@@ -480,7 +479,7 @@ function bkCount(){
 function viewBackup(){
   var c=bkCount(),age=store&&store.backupAt?Math.floor((Date.now()-store.backupAt)/86400000):null;
   var last=!store||!store.backupAt?'Noch nie gesichert.':'Zuletzt gesichert: '+(age===0?'heute':age===1?'gestern':'vor '+age+' Tagen')+'.';
-  var h='<div class="bk"><h2>Backup</h2>'
+  var h='<button class="link" type="button" data-tab="train">‹ Zurück zum Training</button><div class="bk"><h2>Backup</h2>'
     +'<p>Deine Einträge liegen nur auf diesem iPhone, nirgendwo sonst. Sichere sie regelmäßig als Datei, zum Beispiel in iCloud Drive.</p>'
     +'<p class="big">'+c.days+' Trainingstage · '+c.sets+' Sätze</p><p class="ok">'+last+'</p>'
     +'<div class="row"><button class="btn primary" type="button" data-act="bk-export">Backup speichern</button></div>'
@@ -551,6 +550,7 @@ app.addEventListener('click',function(e){
   var b=e.target.closest('[data-act^="bk-"]');if(!b)return;
   var a=b.dataset.act;
   if(a==='bk-open'){state.tab='backup';render();window.scrollTo(0,0)}
+  else if(a==='bk-back'){state.tab='train';render();window.scrollTo(0,0)}
   else if(a==='bk-export')doExport();
   else if(a==='bk-import'){bkMsg('');state.bkPending=null;document.getElementById('bkfile').click()}
   else if(a==='bk-apply')applyImport();
@@ -657,7 +657,7 @@ function viewTrain(){
       +'</div>';
   }
   act.filter(function(x){return state.group==='*'||x.groups.indexOf(state.group)>=0}).forEach(function(x){h+=exCard(x)});
-  return h+'<div class="foot"><button class="btn" type="button" data-act="edit">Übungen bearbeiten</button></div>';
+  return h+'<div class="foot"><button class="btn" type="button" data-act="edit">Übungen bearbeiten</button><button class="btn" type="button" data-act="bk-open">Backup</button></div>';
 }
 function editView(){
   var act=state.items.filter(function(x){return !x.removed});
@@ -845,7 +845,6 @@ var focusSpec=null,focusNew=false;
 function render(){
   document.getElementById('tab-train').setAttribute('aria-selected',state.tab==='train');
   document.getElementById('tab-hist').setAttribute('aria-selected',state.tab==='hist');
-  document.getElementById('tab-backup').setAttribute('aria-selected',state.tab==='backup');
   app.innerHTML=state.tab==='train'?(state.gym?gymView():viewTrain()):state.tab==='backup'?viewBackup():viewHist();
   document.querySelector('.tabs').hidden=!!(state.gym&&state.tab==='train');
   updatePill();
