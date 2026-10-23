@@ -204,6 +204,7 @@ h2{margin:22px 0 8px;font:600 14px var(--font-head);letter-spacing:.1em;text-tra
 .xed>.btn{margin-top:2px}
 .gym .gname{color:var(--ink)}
 .gtgt{display:flex;gap:30px;justify-content:center}
+.gnext{margin:6px 0 0;font:700 30px/1.1 var(--font-head);font-variant-numeric:tabular-nums}
 .gtgt .n{display:block;font:700 62px/1 var(--font-head);font-variant-numeric:tabular-nums}
 .gtgt .u{display:block;margin-top:4px;font:600 14px var(--font-head);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .ghintb{background:none;border:0;color:var(--muted);font-size:15px;padding:6px 8px;text-align:center}
@@ -1350,6 +1351,9 @@ function gymView(){
     var rem=Math.max(0,state.restEnd-Date.now());
     if(state.gmode==='pause'){
       var nxtTxt='Als Nächstes: Satz '+(n+1)+' von '+Math.max(planned,n+1);
+      var nr=rec?adjRec(rec,x):null,nw=nr?nr.w:(d.w>0?d.w:null),nrp;
+      if(nr){nrp=(nr.mode==='failure'&&n+1>=planned)?'Max Wdh.':(nr.repsMin===nr.repsMax?nr.repsMax:nr.repsMin+'–'+nr.repsMax)+' Wdh.'}else nrp=d.r+' Wdh.';
+      nxtTxt+='</p><p class="gnext">'+(nw!=null?esc(fmtNum(nw))+' kg · ':'')+esc(String(nrp));
       return '<div class="gym"><div><p class="gsub">Pause</p><h2 class="gname">'+esc(x.name)+'</h2></div>'
         +'<div class="gmid"><span class="gt gt2'+(rem===0?' over':'')+'" id="gtime" role="timer" aria-label="Pause">'+cdFmt(rem)+'</span><p class="ghint">'+nxtTxt+'</p></div>'
         +'<button class="gsave" type="button" data-act="gy-next">Weiter geht’s!</button>'
