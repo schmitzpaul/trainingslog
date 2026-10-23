@@ -1271,6 +1271,8 @@ function targetHtml(rec,n,planned){
 /* ---------- Gym-Modus: pro Übung, Training -> Satz geschafft -> Pause mit Eintrag ---------- */
 state.gmode='work';state.gx=null;state.open=null;state.showNote=false;state.adj=null;state.restOn=false;state.planned={};state.restEnd=0;state.buzzed=false;
 var REST_MS=120000,wl=null;
+var REST_EX={e_la_calf:60000};
+function restMs(x){return (x&&REST_EX[x.id])||REST_MS}
 function cdFmt(ms){var s=Math.ceil(ms/1000);return pad(Math.floor(s/60))+':'+pad(s%60)}
 function updatePill(){
   var p=document.getElementById('restpill');
@@ -1422,12 +1424,12 @@ app.addEventListener('click',function(e){
   }
   else if(a==='gy-exit'&&state.gmode==='done'&&todayPlanDone()&&!backedUpToday()){state.gmode='backup';render();window.scrollTo(0,0)}
   else if(a==='gy-exit'){state.gym=false;if(state.gmode!=='entry'&&state.gmode!=='pause')state.gmode='work';wakeOff();render()}
-  else if(a==='gy-done'){var lastSet=!!x&&gSets(x.id).length+1>=gPlanned(x);state.restOn=!lastSet;if(!lastSet){state.restEnd=Date.now()+REST_MS;state.buzzed=false}state.gmode='entry';render();window.scrollTo(0,0)}
+  else if(a==='gy-done'){var lastSet=!!x&&gSets(x.id).length+1>=gPlanned(x);state.restOn=!lastSet;if(!lastSet){state.restEnd=Date.now()+restMs(x);state.buzzed=false}state.gmode='entry';render();window.scrollTo(0,0)}
   else if(a==='gy-hstart'&&x){state.hold={start:Date.now(),target:holdTarget(x,gSets(x.id).length).t,buzzed:false};state.gmode='hold';render();window.scrollTo(0,0)}
   else if(a==='gy-hstop'&&x&&state.hold){
     var sec=Math.max(1,Math.round((Date.now()-state.hold.start)/1000));state.hold=null;
     state.gd={ex:x.id,w:0,r:sec};
-    var ls2=gSets(x.id).length+1>=gPlanned(x);state.restOn=!ls2;if(!ls2){state.restEnd=Date.now()+REST_MS;state.buzzed=false}
+    var ls2=gSets(x.id).length+1>=gPlanned(x);state.restOn=!ls2;if(!ls2){state.restEnd=Date.now()+restMs(x);state.buzzed=false}
     state.gmode='entry';render();window.scrollTo(0,0);
   }
   else if(a==='gy-note'){state.showNote=!state.showNote;render()}
