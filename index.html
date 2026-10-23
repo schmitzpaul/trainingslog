@@ -204,6 +204,7 @@ h2{margin:22px 0 8px;font:600 14px var(--font-head);letter-spacing:.1em;text-tra
 .xed>.btn{margin-top:2px}
 .gym .gname{color:var(--ink)}
 .gtgt{display:flex;gap:30px;justify-content:center}
+#htime.over{color:var(--accent)}
 .gnext{margin:6px 0 0;font:700 30px/1.1 var(--font-head);font-variant-numeric:tabular-nums}
 .gtgt .n{display:block;font:700 62px/1 var(--font-head);font-variant-numeric:tabular-nums}
 .gtgt .u{display:block;margin-top:4px;font:600 14px var(--font-head);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
@@ -601,7 +602,7 @@ function exCard(x){
     return '<div class="exthin"><span class="en">'+esc(x.name)+'</span><span class="exb">'+(state.date!==isoDate(new Date())?plus:'')+go+'</span></div>';
   }
   var last=lastSession(x.id,state.date);
-  var rows='<div class="setrow hdr"><span>Satz</span><span>kg</span><span>Wdh.</span><span></span></div>';
+  var rows='<div class="setrow hdr"><span>Satz</span><span>kg</span><span>'+(isTimed(x)?'Sek.':'Wdh.')+'</span><span></span></div>';
   sets.forEach(function(s,i){
     var ph=last?(last.sets[i]||last.sets[last.sets.length-1]):null;
     var phw=ph&&ph.w?fmtNum(ph.w):'',phr=ph?String(ph.r):'';
@@ -612,7 +613,7 @@ function exCard(x){
       +'<button class="x" type="button" data-act="delset" data-ex="'+esc(x.id)+'" data-i="'+i+'" aria-label="Satz '+n+' löschen">×</button></div>';
   });
   return '<section class="card"><div class="exh"><h3 class="ex-n">'+esc(x.name)+'</h3><span class="exb">'+plus+go+'</span></div>'
-    +(last?'<p class="last">Zuletzt: '+esc(compactSets(last.sets))+'</p>':'')+rows+'</section>';
+    +(last?'<p class="last">Zuletzt: '+esc(compactSets(last.sets,isTimed(x)))+'</p>':'')+rows+'</section>';
 }
 
 // Wochenplan: Mo & Do Upper, Di & Fr Lower. Nur Vorschlag, alles bleibt eintragbar.
@@ -712,13 +713,14 @@ function chart(points,unit,name,label){
   s+='<text class="vl" x="'+lx.toFixed(1)+'" y="'+(ly<T+4?ly+20:ly-10).toFixed(1)+'" text-anchor="'+(lx>W-44?'end':'middle')+'">'+esc(fmtNum(lp.v))+'</text>';
   return s+'</svg>';
 }
-function compactSets(sets){
+function isTimed(x){return !!x&&(x.id==='e_lb_plank'||/plank|unterarmstütz|stütz halten/i.test(x.name||''))}
+function compactSets(sets,timed){
   var groups=[];
   sets.forEach(function(s){
     var w=s.w>0?s.w:0,g=groups[groups.length-1];
     if(g&&g.w===w)g.r.push(s.r);else groups.push({w:w,r:[s.r]});
   });
-  return groups.map(function(g){return (g.w?fmtNum(g.w)+' kg: ':'')+g.r.join(', ')}).join(' → ')+' Wdh.';
+  return groups.map(function(g){return (g.w?fmtNum(g.w)+' kg: ':'')+g.r.join(', ')}).join(' → ')+(timed?' s':' Wdh.');
 }
 function spark(vals){
   if(vals.length<2)return '<svg viewBox="0 0 64 24" aria-hidden="true"></svg>';
@@ -743,7 +745,7 @@ function overview(opts,withData){
       tr=(r>0?'+':r<0?'−':'')+Math.abs(r)+' %';cls=r===0?' dim':'';
     }
     h+='<button class="ovrow" type="button" data-act="goex" data-ex="'+esc(x.id)+'"><span><span class="on">'+esc(x.name)+(x.removed?' (ausgeblendet)':'')+'</span>'
-      +'<span class="ol">'+esc(shortDate(l.date))+': '+esc(compactSets(l.sets))+'</span></span>'
+      +'<span class="ol">'+esc(shortDate(l.date))+': '+esc(compactSets(l.sets,isTimed(x)))+'</span></span>'
       +'<span class="ot'+cls+'">'+tr+'</span></button>';
   });
   return h+'<p class="small-note">Die Prozentzahl vergleicht die Trainingsmenge (Gewicht × Wiederholungen aller Sätze) vom ersten und vom letzten Eintrag. Ohne Gewicht zählen die Wiederholungen. Tippe auf eine Übung für die Kurve.</p>';
@@ -837,7 +839,7 @@ function viewHist(){
   if(!hasW)h+='<p class="small-note">Ohne Gewichtsangaben zeigt die Kurve die Wiederholungen pro Tag.</p>';
   h+='<h2>Einträge</h2>';
   ser.slice().reverse().forEach(function(p){
-    h+='<button class="sess" type="button" data-act="goday" data-date="'+p.date+'"><span class="sd">'+esc(wdDate(p.date))+'</span><span class="ss">'+esc(compactSets(p.sets))+'</span></button>';
+    h+='<button class="sess" type="button" data-act="goday" data-date="'+p.date+'"><span class="sd">'+esc(wdDate(p.date))+'</span><span class="ss">'+esc(compactSets(p.sets,isTimed(ex)))+'</span></button>';
   });
   return h;
 }
@@ -1278,6 +1280,12 @@ function updatePill(){
   if(on){var rem=Math.max(0,state.restEnd-Date.now());p.textContent=rem===0?'Pause vorbei':'Pause '+cdFmt(rem)}
 }
 setInterval(function(){
+  if(state.gmode==='hold'&&state.hold){
+    var el=Math.floor((Date.now()-state.hold.start)/1000),he=document.getElementById('htime');
+    if(he){he.textContent=secFmt(el);he.classList.toggle('over',el>=state.hold.target)}
+    if(el>=state.hold.target&&!state.hold.buzzed){state.hold.buzzed=true;try{if(navigator.vibrate)navigator.vibrate([300])}catch(x){}}
+    return;
+  }
   if((state.gmode!=='entry'&&state.gmode!=='pause')||!state.restOn)return;
   var rem=Math.max(0,state.restEnd-Date.now());
   var e=document.getElementById('gtime');
@@ -1306,8 +1314,15 @@ function initDraft(id){
   if(!sets.length&&rc&&rc.w!=null)return {ex:id,w:rc.w,r:rc.repsMax};
   if(sets.length)s=sets[sets.length-1];
   else{var l=lastSession(id,state.date);if(l)s=l.sets[0]}
-  return {ex:id,w:s&&s.w>0?s.w:0,r:s&&s.r>0?s.r:10};
+  return {ex:id,w:s&&s.w>0?s.w:0,r:s&&s.r>0?s.r:(isTimed(gItem(id))?30:10)};
 }
+function holdTarget(x,n){
+  var l=lastSession(x.id,state.date);
+  if(!l)return {t:30,last:null};
+  var p=l.sets[n]||l.sets[l.sets.length-1];
+  return {t:p.r+5,last:p.r};
+}
+function secFmt(sec){return pad(Math.floor(sec/60))+':'+pad(sec%60)}
 function wUp(w){return w<5?w+1:(Math.floor(w/2.5+1e-9)+1)*2.5}
 function wDown(w){return w<=5?Math.max(0,w-1):(Math.ceil(w/2.5-1e-9)-1)*2.5}
 function commitSet(id){
@@ -1324,10 +1339,10 @@ function adjRow(act,val,unit,l,m){
     +'<span><span class="n">'+val+'</span><span class="u">'+unit+'</span></span>'
     +'<button class="gb" type="button" data-act="'+act+'" data-d="1" aria-label="'+m+'">+</button></div>';
 }
-function prevHtml(l,n){
+function prevHtml(l,n,tm){
   if(!l)return '<p class="glast">Noch kein früherer Eintrag</p>';
   return '<div class="gprev"><span class="gpl">Letztes Mal</span>'+l.sets.slice(0,6).map(function(s,i){
-    return '<span class="pv'+(i<n?' dn':'')+(i===n?' cur':'')+'">'+(s.w>0?'<b>'+esc(fmtNum(s.w))+' kg</b>':'')+'<b>'+s.r+' Wdh.</b></span>';
+    return '<span class="pv'+(i<n?' dn':'')+(i===n?' cur':'')+'">'+(s.w>0?'<b>'+esc(fmtNum(s.w))+' kg</b>':'')+'<b>'+s.r+(tm?' s':' Wdh.')+'</b></span>';
   }).join('')+'</div>';
 }
 function gymView(){
@@ -1345,14 +1360,22 @@ function gymView(){
       +'<button class="gsave" type="button" data-act="gy-exit">Fertig</button></div>';
   }
   if(!state.gd||state.gd.ex!==x.id)state.gd=initDraft(x.id);
-  var d=state.gd,lastS=lastSession(x.id,state.date),rec=gRec(x);
-  var head='<div>'+dateTag()+'<p class="gsub">Satz '+(n+1)+' von '+planned+'</p><h2 class="gname">'+esc(x.name)+'</h2>'+(rec?'':prevHtml(lastS,n))+'</div>';
+  var d=state.gd,lastS=lastSession(x.id,state.date),rec=gRec(x),tm=isTimed(x);
+  if(tm&&state.gmode==='hold'&&state.hold){
+    var el=Math.floor((Date.now()-state.hold.start)/1000);
+    return '<div class="gym"><div>'+dateTag()+'<p class="gsub">Satz '+(n+1)+' von '+planned+'</p><h2 class="gname">'+esc(x.name)+'</h2></div>'
+      +'<div class="gmid"><span class="gt'+(el>=state.hold.target?' over':'')+'" id="htime" role="timer" aria-label="Haltezeit">'+secFmt(el)+'</span><p class="ghint">Ziel: '+state.hold.target+' s · danach so lange halten, wie es sauber geht</p></div>'
+      +'<button class="gsave" type="button" data-act="gy-hstop">Stopp</button>'
+      +'<div class="glinks"><button class="glink" type="button" data-act="gy-back">Abbrechen</button><span></span></div></div>';
+  }
+  var head='<div>'+dateTag()+'<p class="gsub">Satz '+(n+1)+' von '+planned+'</p><h2 class="gname">'+esc(x.name)+'</h2>'+(rec?'':prevHtml(lastS,n,tm))+'</div>';
   if(state.gmode==='entry'||state.gmode==='pause'){
     var rem=Math.max(0,state.restEnd-Date.now());
     if(state.gmode==='pause'){
       var nxtTxt='Als Nächstes: Satz '+(n+1)+' von '+Math.max(planned,n+1);
       var nr=rec?adjRec(rec,x):null,nw=nr?nr.w:(d.w>0?d.w:null),nrp;
-      if(nr){nrp=(nr.mode==='failure'&&n+1>=planned)?'Max Wdh.':(nr.repsMin===nr.repsMax?nr.repsMax:nr.repsMin+'–'+nr.repsMax)+' Wdh.'}else nrp=d.r+' Wdh.';
+      if(tm){var ht=holdTarget(x,n);nw=null;nrp='Ziel '+ht.t+' s'}
+      else if(nr){nrp=(nr.mode==='failure'&&n+1>=planned)?'Max Wdh.':(nr.repsMin===nr.repsMax?nr.repsMax:nr.repsMin+'–'+nr.repsMax)+' Wdh.'}else nrp=d.r+' Wdh.';
       nxtTxt+='</p><p class="gnext">'+(nw!=null?esc(fmtNum(nw))+' kg · ':'')+esc(String(nrp));
       return '<div class="gym"><div><p class="gsub">Pause</p><h2 class="gname">'+esc(x.name)+'</h2></div>'
         +'<div class="gmid"><span class="gt gt2'+(rem===0?' over':'')+'" id="gtime" role="timer" aria-label="Pause">'+cdFmt(rem)+'</span><p class="ghint">'+nxtTxt+'</p></div>'
@@ -1362,13 +1385,21 @@ function gymView(){
     return '<div class="gym">'+head+'<div class="gmid">'
       +(state.restOn?'<span class="gts">Pause <span id="gtime">'+cdFmt(rem)+'</span></span>':'')
       +'<p class="ghint">Was hast du geschafft?</p>'
-      +adjRow('gy-w',esc(fmtNum(d.w)),'kg','Gewicht weniger','Gewicht mehr')
-      +adjRow('gy-r',d.r,'Wdh.','Wiederholungen weniger','Wiederholungen mehr')+'</div>'
+      +(tm?adjRow('gy-r',d.r,'Sekunden','5 Sekunden weniger','5 Sekunden mehr')
+        :adjRow('gy-w',esc(fmtNum(d.w)),'kg','Gewicht weniger','Gewicht mehr')+adjRow('gy-r',d.r,'Wdh.','Wiederholungen weniger','Wiederholungen mehr'))+'</div>'
       +'<button class="gsave" type="button" data-act="gy-save">Speichern</button>'
       +'<div class="glinks"><button class="glink" type="button" data-act="gy-back">Satz verwerfen</button>'
       +'<button class="glink" type="button" data-act="gy-exit">Zur Übersicht</button></div></div>';
   }
-  return '<div class="gym">'+head+'<div class="gmid">'+(rec?targetHtml(adjRec(rec,x),n,planned)+(lastS?'<p class="glast">Zuletzt: '+esc(compactSets(lastS.sets))+'</p>':''):ICON)+'</div>'
+  if(tm){
+    var hz=holdTarget(x,n);
+    return '<div class="gym"><div>'+dateTag()+'<p class="gsub">Satz '+(n+1)+' von '+planned+'</p><h2 class="gname">'+esc(x.name)+'</h2></div>'
+      +'<div class="gmid"><div class="gtgt"><span><span class="n">'+hz.t+'</span><span class="u">Sekunden Ziel</span></span></div>'
+      +'<p class="glast">'+(hz.last!=null?'Letztes Mal: '+hz.last+' s':'Noch kein früherer Eintrag')+'</p></div>'
+      +'<button class="gsave" type="button" data-act="gy-hstart">Start</button>'
+      +'<div class="glinks"><button class="glink" type="button" data-act="gy-exit">Zur Übersicht</button><span></span></div></div>';
+  }
+  return '<div class="gym">'+head+'<div class="gmid">'+(rec?targetHtml(adjRec(rec,x),n,planned)+(lastS?'<p class="glast">Zuletzt: '+esc(compactSets(lastS.sets,isTimed(x)))+'</p>':''):ICON)+'</div>'
     +'<button class="gsave" type="button" data-act="gy-done">Satz geschafft</button>'
     +'<div class="glinks"><button class="glink" type="button" data-act="gy-exit">Zur \u00dcbersicht</button><span></span></div></div>';
 }
@@ -1392,10 +1423,17 @@ app.addEventListener('click',function(e){
   else if(a==='gy-exit'&&state.gmode==='done'&&todayPlanDone()&&!backedUpToday()){state.gmode='backup';render();window.scrollTo(0,0)}
   else if(a==='gy-exit'){state.gym=false;if(state.gmode!=='entry'&&state.gmode!=='pause')state.gmode='work';wakeOff();render()}
   else if(a==='gy-done'){var lastSet=!!x&&gSets(x.id).length+1>=gPlanned(x);state.restOn=!lastSet;if(!lastSet){state.restEnd=Date.now()+REST_MS;state.buzzed=false}state.gmode='entry';render();window.scrollTo(0,0)}
+  else if(a==='gy-hstart'&&x){state.hold={start:Date.now(),target:holdTarget(x,gSets(x.id).length).t,buzzed:false};state.gmode='hold';render();window.scrollTo(0,0)}
+  else if(a==='gy-hstop'&&x&&state.hold){
+    var sec=Math.max(1,Math.round((Date.now()-state.hold.start)/1000));state.hold=null;
+    state.gd={ex:x.id,w:0,r:sec};
+    var ls2=gSets(x.id).length+1>=gPlanned(x);state.restOn=!ls2;if(!ls2){state.restEnd=Date.now()+REST_MS;state.buzzed=false}
+    state.gmode='entry';render();window.scrollTo(0,0);
+  }
   else if(a==='gy-note'){state.showNote=!state.showNote;render()}
-  else if(a==='gy-back'){state.gmode='work';render()}
+  else if(a==='gy-back'){state.hold=null;state.gmode='work';render()}
   else if(a==='gy-w'&&state.gd){state.gd.w=d>0?wUp(state.gd.w):wDown(state.gd.w);render()}
-  else if(a==='gy-r'&&state.gd){state.gd.r=Math.max(1,state.gd.r+d);render()}
+  else if(a==='gy-r'&&state.gd){var st=isTimed(x)?5:1;state.gd.r=Math.max(1,state.gd.r+d*st);render()}
   else if(a==='gy-next'){state.gmode='work';render();window.scrollTo(0,0)}
   else if(a==='gy-save'){
     if(!x)return;
