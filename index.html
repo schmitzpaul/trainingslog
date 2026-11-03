@@ -159,6 +159,10 @@ h2{margin:22px 0 8px;font:600 14px var(--font-head);letter-spacing:.1em;text-tra
 .glink{background:none;border:0;color:var(--muted);padding:12px 4px;font-size:15px}
 .base{stroke:var(--muted);stroke-dasharray:4 4;stroke-width:1}
 .mixl{fill:none;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.mixl.dim,circle.dim{opacity:.25}
+.avgl{fill:none;stroke:var(--ink);stroke-width:3.5;stroke-linejoin:round;stroke-linecap:round}
+.avgp{fill:var(--ink)}
+.leg.avg i{background:var(--ink);height:5px}
 .leg{display:flex;align-items:center;gap:10px;width:100%;min-height:42px;padding:6px 12px;margin-top:6px;background:var(--surface);border:1px solid var(--line);border-radius:8px;text-align:left}
 .leg[aria-pressed="false"]{opacity:.45}
 .leg i{flex:0 0 16px;height:4px;border-radius:2px}
@@ -307,13 +311,13 @@ var state={
   histEx:prefs.histEx||null,
   metric:['top','e1','vol'].indexOf(prefs.metric)>=0?prefs.metric:'top',
   histView:['ex','mix'].indexOf(prefs.histView)>=0?prefs.histView:'all',
-  hidden:{},
+  hidden:{},showAvg:prefs.showAvg===true,
   autoFor:null,
   gym:false,gi:0,gd:null,
   gstep:[1,2.5,5].indexOf(prefs.gstep)>=0?prefs.gstep:2.5
 };
 function savePrefs(){
-  try{localStorage.setItem(PREF_KEY,JSON.stringify({tab:state.tab,group:state.group,histEx:state.histEx,metric:state.metric,histView:state.histView,gstep:state.gstep}))}catch(e){}
+  try{localStorage.setItem(PREF_KEY,JSON.stringify({tab:state.tab,group:state.group,histEx:state.histEx,metric:state.metric,histView:state.histView,gstep:state.gstep,showAvg:state.showAvg}))}catch(e){}
 }
 
 var app=document.getElementById('app');
@@ -772,10 +776,21 @@ function mixView(opts,withData){
   }).sort();
   if(!rows.length)return '<div class="empty">Noch keine Daten für die Überlagerung.</div>';
   var vis=rows.filter(function(r){return !state.hidden[r.x.id]});
+  // Durchschnitt: pro Trainingstag Mittel der zuletzt bekannten %-Werte aller sichtbaren Übungen (ab ihrem ersten Eintrag)
+  var avg=[];
+  if(state.showAvg&&vis.length){
+    var cur={};
+    days.forEach(function(d){
+      vis.forEach(function(r){r.ser.forEach(function(p){if(p.date===d)cur[r.x.id]=p.st[r.key]/r.base*100})});
+      var ks=Object.keys(cur);
+      if(ks.length)avg.push({d:d,v:ks.reduce(function(a,k){return a+cur[k]},0)/ks.length});
+    });
+  }
   var W=360,H=240,L=46,R=14,T=14,B=28,n=days.length;
   var X=function(d){var k=days.indexOf(d);return n===1?(L+W-R)/2:L+(W-L-R)*k/(n-1)};
   var all=[100];
   vis.forEach(function(r){r.ser.forEach(function(p){all.push(p.st[r.key]/r.base*100)})});
+  avg.forEach(function(a){all.push(a.v)});
   var sc=niceScale(Math.min.apply(null,all),Math.max.apply(null,all),4,false);
   var Y=function(v){return T+(H-T-B)*(1-(v-sc.lo)/(sc.hi-sc.lo))};
   var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Alle Übungen überlagert, Trainingsmenge in Prozent des ersten Eintrags">';
@@ -791,14 +806,21 @@ function mixView(opts,withData){
   });
   vis.forEach(function(r){
     var col='var(--c'+(r.i%8+1)+')',pts=r.ser.map(function(p){return {x:X(p.date),y:Y(p.st[r.key]/r.base*100),v:p.st[r.key]/r.base*100,d:p.date}});
-    if(pts.length>1)s+='<path class="mixl" style="stroke:'+col+'" d="'+pts.map(function(p,k){return (k?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)}).join(' ')+'"/>';
+    if(pts.length>1)s+='<path class="mixl'+(avg.length?' dim':'')+'" style="stroke:'+col+'" d="'+pts.map(function(p,k){return (k?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)}).join(' ')+'"/>';
     pts.forEach(function(p){
-      s+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.5" style="fill:'+col+'"><title>'+esc(r.x.name+', '+shortDate(p.d)+': '+Math.round(p.v)+' %')+'</title></circle>';
+      s+='<circle'+(avg.length?' class="dim"':'')+' cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.5" style="fill:'+col+'"><title>'+esc(r.x.name+', '+shortDate(p.d)+': '+Math.round(p.v)+' %')+'</title></circle>';
     });
   });
+  if(avg.length){
+    var ap=avg.map(function(a){return {x:X(a.d),y:Y(a.v),v:a.v,d:a.d}});
+    if(ap.length>1)s+='<path class="avgl" d="'+ap.map(function(p,k){return (k?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)}).join(' ')+'"/>';
+    ap.forEach(function(p){s+='<circle class="avgp" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5"><title>'+esc('Durchschnitt, '+shortDate(p.d)+': '+Math.round(p.v)+' %')+'</title></circle>'});
+  }
   s+='</svg>';
   var h='<div class="chartbox">'+s+'</div>'
     +'<p class="small-note">100 % = dein erster Eintrag je Übung (Trainingsmenge: Gewicht × Wiederholungen aller Sätze, ohne Gewicht die Wiederholungen). Tippe auf eine Übung unten, um ihre Linie aus- oder einzublenden.</p>';
+  var ad=avg.length?Math.round(avg[avg.length-1].v-100):null;
+  h+='<button class="leg avg" type="button" data-act="avgtog" aria-pressed="'+state.showAvg+'"><i></i><span class="lt">Durchschnitt aller Kurven</span><b>'+(ad==null?'':(ad>0?'+':ad<0?'−':'')+Math.abs(ad)+' %')+'</b></button>';
   rows.forEach(function(r){
     var l=r.ser[r.ser.length-1],d=Math.round(l.st[r.key]/r.base*100-100);
     h+='<button class="leg" type="button" data-act="legend" data-ex="'+esc(r.x.id)+'" aria-pressed="'+(!state.hidden[r.x.id])+'"><i style="background:var(--c'+(r.i%8+1)+')"></i><span class="lt">'+esc(r.x.name)+'</span><b>'+(d>0?'+':d<0?'−':'')+Math.abs(d)+' %</b></button>';
@@ -920,6 +942,7 @@ app.addEventListener('click',function(e){
   else if(a==='metric'){state.metric=b.dataset.m;savePrefs();render()}
   else if(a==='hview'){state.histView=b.dataset.v;savePrefs();render()}
   else if(a==='legend'){state.hidden[ex]=!state.hidden[ex];render()}
+  else if(a==='avgtog'){state.showAvg=!state.showAvg;savePrefs();render()}
   else if(a==='goex'){state.histEx=b.dataset.ex;state.histView='ex';savePrefs();render();window.scrollTo(0,0)}
   else if(a==='goday'){state.date=b.dataset.date;state.tab='train';savePrefs();render();window.scrollTo(0,0)}
 });
