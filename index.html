@@ -431,7 +431,7 @@ function onSnap(snap){
 }
 /* ---------- Lokaler Speicher (nur auf diesem Gerät) ---------- */
 var STORE_KEY='trainingslog.data.v1';
-var DEFAULT_DOCS={exercises:{"items": [{"groups": ["Upper A"], "id": "e_ua_bank", "name": "Bankdrücken", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_row", "name": "Vorgebeugtes Langhantelrudern", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_schulter", "name": "Schulterdrücken", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_lat", "name": "Latzug (Obergriff)", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_seit", "name": "Seitheben", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_tri", "name": "Trizepsdrücken am Kabel", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_bic", "name": "Bizeps Curls", "removed": false}, {"groups": ["Lower A"], "id": "e_la_squat", "name": "Kniebeuge Langhantel", "removed": false}, {"groups": ["Lower A"], "id": "e_la_rdl", "name": "Rumänisches Kreuzheben", "removed": false}, {"groups": ["Lower A"], "id": "e_la_ext", "name": "Beinstrecker", "removed": false}, {"groups": ["Lower A"], "id": "e_la_bss", "name": "Bulgarische Split Squats", "removed": true}, {"groups": ["Lower A"], "id": "e_la_calf", "name": "Wadenheben stehend", "removed": false}, {"groups": ["Lower A"], "id": "e_lb_plank", "name": "Plank", "removed": false}]}};
+var DEFAULT_DOCS={exercises:{"items": [{"groups": ["Upper A"], "id": "e_ua_bank", "name": "Bankdrücken", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_row", "name": "Vorgebeugtes Langhantelrudern", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_schulter", "name": "Schulterdrücken", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_lat", "name": "Latzug (Obergriff)", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_seit", "name": "Seitheben", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_tri", "name": "Trizepsdrücken am Kabel", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_bic", "name": "Bizeps Curls", "removed": false}, {"groups": ["Lower A"], "id": "e_la_squat", "name": "Kniebeuge Langhantel", "removed": false}, {"groups": ["Lower A"], "id": "e_la_curl", "name": "Beinbeuger", "removed": false}, {"groups": ["Lower A"], "id": "e_la_rdl", "name": "Rumänisches Kreuzheben", "removed": true}, {"groups": ["Lower A"], "id": "e_la_ext", "name": "Beinstrecker", "removed": false}, {"groups": ["Lower A"], "id": "e_la_bss", "name": "Bulgarische Split Squats", "removed": true}, {"groups": ["Lower A"], "id": "e_la_calf", "name": "Wadenheben stehend", "removed": false}, {"groups": ["Lower A"], "id": "e_lb_plank", "name": "Plank", "removed": true}]}};
 var store=null;
 function persist(){localStorage.setItem(STORE_KEY,JSON.stringify(store))}
 var localDb={doc:function(path){
@@ -458,6 +458,21 @@ function migrateExt(){
   it[i].removed=true;
   it.splice(i,0,{id:'e_la_ext',name:'Beinstrecker',groups:g,removed:false});
 }
+/* Einmalig: Beinbeuger statt Rumänisches Kreuzheben, Plank raus. Verlauf bleibt, alte Übungen nur ausgeblendet. */
+function migrateCurl(){
+  var ex=store.docs.exercises,it=ex&&Array.isArray(ex.items)?ex.items:null;
+  if(!it||it.some(function(x){return x&&x.id==='e_la_curl'}))return;
+  try{localStorage.setItem(STORE_KEY+'.premig',JSON.stringify(store))}catch(e){}
+  var i=it.findIndex(function(x){return x&&x.id==='e_la_rdl'}),g=['Lower A'];
+  if(i>=0){if(Array.isArray(it[i].groups)&&it[i].groups.length)g=it[i].groups.slice();it[i].removed=true}
+  else{i=it.findIndex(function(x){return x&&x.id==='e_la_squat'});i=i>=0?i+1:it.length}
+  it.forEach(function(x){
+    if(!x)return;
+    if(x.id==='e_lb_plank')x.removed=true;
+    else if(/beinbeuger|leg ?curl/i.test(x.name||''))x.removed=true; /* selbst angelegter Beinbeuger: ausblenden, Verlauf bleibt */
+  });
+  it.splice(i,0,{id:'e_la_curl',name:'Beinbeuger',groups:g,removed:false});
+}
 function boot(){
   try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
   var raw=null,ok=true;
@@ -475,7 +490,7 @@ function boot(){
     st={docs:JSON.parse(JSON.stringify(DEFAULT_DOCS)),backupAt:null,createdAt:Date.now()};
   }
   store=st;db=localDb;
-  migrateExt();
+  migrateExt();migrateCurl();
   try{persist()}catch(e){state.dbOff=true}
   loadAll();
   state.loaded=true;setStatus(state.dbOff?'Speichern nicht möglich':'Gespeichert',state.dbOff?'bad':'');
@@ -556,7 +571,7 @@ function applyImport(){
   var p=state.bkPending;if(!p)return;
   try{localStorage.setItem(STORE_KEY+'.prev',JSON.stringify(store))}catch(e){}
   timers.forEach(function(t){clearTimeout(t)});timers.clear();builders.clear();again.clear();
-  store.docs=p.docs;
+  store.docs=p.docs;migrateExt();migrateCurl();
   try{persist()}catch(e){bkMsg('Einspielen fehlgeschlagen: Speicher voll oder gesperrt.',true);state.bkPending=null;render();return}
   loadAll();state.bkPending=null;bkMsg('Backup eingespielt.');setStatus('Gespeichert');render();
 }
@@ -1037,6 +1052,7 @@ function recommend(exercise, sessions, today) {
 
   function stepN(w) { /* Anzahl Rasterstufen pro Progressionsschritt */
     if (ex.step > 0 && unit === 2.5 && !(ex.weights && ex.weights.length)) { return Math.max(1, Math.round(ex.step / 2.5)); }
+    if (ex.weights && ex.weights.length) { return 1; }
     if (type === 'barbell') { return isLowerBody ? 2 : 1; }
     if (type === 'cable' || type === 'machine') { return w >= 45 ? 2 : 1; }
     return 1;
@@ -1242,10 +1258,18 @@ var CFG={
   e_la_squat:{type:'barbell',repMin:6,repMax:10,sets:3,noFailure:true},
   e_la_rdl:{type:'barbell',repMin:8,repMax:12,sets:3,noFailure:true},
   e_la_bss:{type:'dumbbell',repMin:8,repMax:12,sets:2,noFailure:true},
+  e_la_curl:{type:'machine',repMin:10,repMax:15,sets:3},
   e_la_ext:{type:'machine',repMin:10,repMax:15,sets:2},
   e_la_calf:{type:'dumbbell',repMin:10,repMax:15,sets:3}
 };
 var EST={
+  e_la_curl:function(){
+    var l=lastSession('e_la_ext',state.date),top=0;
+    if(l)l.sets.forEach(function(s){if(s.w>top)top=s.w});
+    var tail=' Ziel 10 bis 15 saubere Wdh., der letzte Satz darf bis zum Muskelversagen gehen. Nach dem ersten Training passt sich die Empfehlung an.';
+    if(top>0){var w=snapDown('machine',top*0.75);return {w:w,note:'Noch keine Daten, deshalb geschätzt: Beim Beinstrecker hattest du zuletzt '+fmtNum(top)+' kg. Der Beinbeuger geht meist etwa ein Viertel leichter, daher '+fmtNum(w)+' kg.'+tail}}
+    return {w:15,note:'Noch keine Daten, deshalb geschätzt: 15 kg. Der Beinbeuger trainiert die Oberschenkel-Rückseite und geht meist etwas leichter als der Beinstrecker.'+tail};
+  },
   e_la_rdl:{w:30,note:'Noch keine Daten, deshalb geschätzt: Deine Kniebeuge lief mit 25 kg locker (10 bis 12 Wdh.). Rumänisches Kreuzheben geht meist etwas schwerer, daher 30 kg als Startwert. Nach dem ersten Training passt sich die Empfehlung an deine Zahlen an.'},
   e_la_bss:{w:5,note:'Noch keine Daten, deshalb geschätzt: 5 kg pro Hand. Bei Split Squats zählt anfangs Balance und Technik, das Gewicht ist zweitrangig. Nach dem ersten Training passt sich die Empfehlung an.'},
   e_la_ext:{w:20,note:'Noch keine Daten, deshalb geschätzt: 20 kg. Der Beinstrecker belastet nur den Oberschenkel vorne, deshalb deutlich weniger als bei der Kniebeuge. Ziel 10 bis 15 saubere Wdh., der letzte Satz darf bis zum Muskelversagen gehen. Nach dem ersten Training passt sich die Empfehlung an.'},
@@ -1261,10 +1285,14 @@ function gRec(x){
     if(v.length)out.push({date:d,sets:v.map(function(s){return {w:s.w,r:s.r}})});
   });
   var est=EST[x.id];
+  if(typeof est==='function')est=out.length?null:est();
   if(!out.length&&est)return {w:est.w,repsMin:c.repMin,repsMax:c.repMax,mode:'work',action:'est',sets:c.sets,note:est.note,lastSetFailure:false,daysSince:null};
-  try{return recommend({name:x.name,type:c.type,repMin:c.repMin,repMax:c.repMax,sets:c.sets,allowFailure:true,noFailure:c.noFailure===true},out,today)}catch(err){return null}
+  try{return recommend({name:x.name,type:c.type,repMin:c.repMin,repMax:c.repMax,sets:c.sets,allowFailure:true,noFailure:c.noFailure===true,weights:c.type==='barbell'?BAR5:null},out,today)}catch(err){return null}
 }
+/* Langhantel: nur 5-kg-Sprünge möglich (kleinste Scheibe 2,5 kg pro Seite) */
+var BAR5=[];for(var bw=20;bw<=300;bw+=5)BAR5.push(bw);
 function snapDown(type,w){
+  if(type==='barbell')return Math.max(20,Math.floor(w/5+1e-9)*5);
   if(type==='dumbbell'){
     var g=[1,2,3,4,5,7.5,10],i,b=1;
     for(i=12;i<=60;i+=2)g.push(i);
@@ -1308,7 +1336,8 @@ function targetHtml(rec,n,planned){
 /* ---------- Gym-Modus: pro Übung, Training -> Satz geschafft -> Pause mit Eintrag ---------- */
 state.gmode='work';state.gx=null;state.open=null;state.showNote=false;state.adj=null;state.restOn=false;state.planned={};state.restEnd=0;state.buzzed=false;
 var REST_MS=120000,wl=null;
-var REST_EX={e_la_calf:60000,e_lb_plank:60000};
+/* Pausen: Kniebeuge 3 min, übrige Grundübungen 2 min (REST_MS), Isolation 90 s, Waden/Plank 60 s */
+var REST_EX={e_la_squat:180000,e_ua_seit:90000,e_ua_tri:90000,e_ua_bic:90000,e_la_curl:90000,e_la_ext:90000,e_la_calf:60000,e_lb_plank:60000};
 function restMs(x){return (x&&REST_EX[x.id])||REST_MS}
 function cdFmt(ms){var s=Math.ceil(ms/1000);return pad(Math.floor(s/60))+':'+pad(s%60)}
 function updatePill(){
@@ -1362,8 +1391,8 @@ function holdTarget(x,n){
   return {t:p.r+5,last:p.r};
 }
 function secFmt(sec){return pad(Math.floor(sec/60))+':'+pad(sec%60)}
-function wUp(w){return w<5?w+1:(Math.floor(w/2.5+1e-9)+1)*2.5}
-function wDown(w){return w<=5?Math.max(0,w-1):(Math.ceil(w/2.5-1e-9)-1)*2.5}
+function wUp(w,t){if(t==='barbell')return (Math.floor(w/5+1e-9)+1)*5;return w<5?w+1:(Math.floor(w/2.5+1e-9)+1)*2.5}
+function wDown(w,t){if(t==='barbell')return Math.max(0,(Math.ceil(w/5-1e-9)-1)*5);return w<=5?Math.max(0,w-1):(Math.ceil(w/2.5-1e-9)-1)*2.5}
 function commitSet(id){
   var today=state.date;
   if(!state.gd||state.gd.ex!==id||!(state.gd.r>0))return null;
@@ -1471,7 +1500,7 @@ app.addEventListener('click',function(e){
   }
   else if(a==='gy-note'){state.showNote=!state.showNote;render()}
   else if(a==='gy-back'){state.hold=null;state.gmode='work';render()}
-  else if(a==='gy-w'&&state.gd){state.gd.w=d>0?wUp(state.gd.w):wDown(state.gd.w);render()}
+  else if(a==='gy-w'&&state.gd){var ty=x&&CFG[x.id]?CFG[x.id].type:'';state.gd.w=d>0?wUp(state.gd.w,ty):wDown(state.gd.w,ty);render()}
   else if(a==='gy-r'&&state.gd){var st=isTimed(x)?5:1;state.gd.r=Math.max(1,state.gd.r+d*st);render()}
   else if(a==='gy-next'){state.gmode='work';render();window.scrollTo(0,0)}
   else if(a==='gy-save'){
