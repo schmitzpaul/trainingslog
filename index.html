@@ -431,7 +431,7 @@ function onSnap(snap){
 }
 /* ---------- Lokaler Speicher (nur auf diesem Gerät) ---------- */
 var STORE_KEY='trainingslog.data.v1';
-var DEFAULT_DOCS={exercises:{"items": [{"groups": ["Upper A"], "id": "e_ua_bank", "name": "Bankdrücken", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_row", "name": "Vorgebeugtes Langhantelrudern", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_schulter", "name": "Schulterdrücken", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_lat", "name": "Latzug (Obergriff)", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_seit", "name": "Seitheben", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_tri", "name": "Trizepsdrücken am Kabel", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_bic", "name": "Bizeps Curls", "removed": false}, {"groups": ["Lower A"], "id": "e_la_squat", "name": "Kniebeuge Langhantel", "removed": false}, {"groups": ["Lower A"], "id": "e_la_curl", "name": "Beinbeuger", "removed": false}, {"groups": ["Lower A"], "id": "e_la_rdl", "name": "Rumänisches Kreuzheben", "removed": true}, {"groups": ["Lower A"], "id": "e_la_ext", "name": "Beinstrecker", "removed": false}, {"groups": ["Lower A"], "id": "e_la_bss", "name": "Bulgarische Split Squats", "removed": true}, {"groups": ["Lower A"], "id": "e_la_calf", "name": "Wadenheben stehend", "removed": false}, {"groups": ["Lower A"], "id": "e_lb_plank", "name": "Plank", "removed": true}]}};
+var DEFAULT_DOCS={exercises:{"items": [{"groups": ["Upper A"], "id": "e_ua_bank", "name": "Bankdrücken", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_row", "name": "Vorgebeugtes Langhantelrudern", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_schulter", "name": "Schulterdrücken", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_lat", "name": "Latzug (Obergriff)", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_seit", "name": "Seitheben", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_tri", "name": "Trizepsdrücken am Kabel", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_bic", "name": "Bizeps Curls", "removed": false}, {"groups": ["Lower A"], "id": "e_la_squat", "name": "Kniebeuge Langhantel", "removed": false}, {"groups": ["Lower A"], "id": "e_la_curl", "name": "Beinbeuger", "removed": false}, {"groups": ["Lower A"], "id": "e_la_rdl", "name": "Rumänisches Kreuzheben", "removed": true}, {"groups": ["Lower A"], "id": "e_la_ext", "name": "Beinstrecker", "removed": false}, {"groups": ["Lower A"], "id": "e_la_bss", "name": "Bulgarische Split Squats", "removed": true}, {"groups": ["Lower A"], "id": "e_la_calf", "name": "Wadenheben stehend", "removed": false}, {"groups": ["Lower A"], "id": "e_la_crunch", "name": "Bauchcrunches mit Gewicht", "removed": false}, {"groups": ["Lower A"], "id": "e_lb_plank", "name": "Plank", "removed": true}]}};
 var store=null;
 function persist(){localStorage.setItem(STORE_KEY,JSON.stringify(store))}
 var localDb={doc:function(path){
@@ -473,6 +473,16 @@ function migrateCurl(){
   });
   it.splice(i,0,{id:'e_la_curl',name:'Beinbeuger',groups:g,removed:false});
 }
+/* Einmalig: Bauchcrunches mit Gewicht ans Ende von Lower A (nach Wadenheben). */
+function migrateCrunch(){
+  var ex=store.docs.exercises,it=ex&&Array.isArray(ex.items)?ex.items:null;
+  if(!it||it.some(function(x){return x&&x.id==='e_la_crunch'}))return;
+  try{localStorage.setItem(STORE_KEY+'.premig',JSON.stringify(store))}catch(e){}
+  var i=it.findIndex(function(x){return x&&x.id==='e_la_calf'}),g=['Lower A'];
+  if(i>=0){if(Array.isArray(it[i].groups)&&it[i].groups.length)g=it[i].groups.slice();i++}else i=it.length;
+  it.forEach(function(x){if(x&&!x.removed&&/crunch/i.test(x.name||''))x.removed=true}); /* selbst angelegte Crunches: ausblenden, Verlauf bleibt */
+  it.splice(i,0,{id:'e_la_crunch',name:'Bauchcrunches mit Gewicht',groups:g,removed:false});
+}
 function boot(){
   try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
   var raw=null,ok=true;
@@ -490,7 +500,7 @@ function boot(){
     st={docs:JSON.parse(JSON.stringify(DEFAULT_DOCS)),backupAt:null,createdAt:Date.now()};
   }
   store=st;db=localDb;
-  migrateExt();migrateCurl();
+  migrateExt();migrateCurl();migrateCrunch();
   try{persist()}catch(e){state.dbOff=true}
   loadAll();
   state.loaded=true;setStatus(state.dbOff?'Speichern nicht möglich':'Gespeichert',state.dbOff?'bad':'');
@@ -571,7 +581,7 @@ function applyImport(){
   var p=state.bkPending;if(!p)return;
   try{localStorage.setItem(STORE_KEY+'.prev',JSON.stringify(store))}catch(e){}
   timers.forEach(function(t){clearTimeout(t)});timers.clear();builders.clear();again.clear();
-  store.docs=p.docs;migrateExt();migrateCurl();
+  store.docs=p.docs;migrateExt();migrateCurl();migrateCrunch();
   try{persist()}catch(e){bkMsg('Einspielen fehlgeschlagen: Speicher voll oder gesperrt.',true);state.bkPending=null;render();return}
   loadAll();state.bkPending=null;bkMsg('Backup eingespielt.');setStatus('Gespeichert');render();
 }
@@ -1260,9 +1270,11 @@ var CFG={
   e_la_bss:{type:'dumbbell',repMin:8,repMax:12,sets:2,noFailure:true},
   e_la_curl:{type:'machine',repMin:10,repMax:15,sets:3},
   e_la_ext:{type:'machine',repMin:10,repMax:15,sets:2},
-  e_la_calf:{type:'dumbbell',repMin:10,repMax:15,sets:3}
+  e_la_calf:{type:'dumbbell',repMin:10,repMax:15,sets:3},
+  e_la_crunch:{type:'dumbbell',repMin:10,repMax:15,sets:3}
 };
 var EST={
+  e_la_crunch:{w:5,note:'Noch keine Daten, deshalb geschätzt: 5 kg (Kurzhantel oder Scheibe auf der Brust). Langsam hochrollen, oben kurz anspannen, nicht am Nacken ziehen. Ziel 10 bis 15 Wdh., der letzte Satz darf bis zum Muskelversagen gehen. Nach dem ersten Training passt sich die Empfehlung an.'},
   e_la_curl:function(){
     var l=lastSession('e_la_ext',state.date),top=0;
     if(l)l.sets.forEach(function(s){if(s.w>top)top=s.w});
@@ -1336,8 +1348,8 @@ function targetHtml(rec,n,planned){
 /* ---------- Gym-Modus: pro Übung, Training -> Satz geschafft -> Pause mit Eintrag ---------- */
 state.gmode='work';state.gx=null;state.open=null;state.showNote=false;state.adj=null;state.restOn=false;state.planned={};state.restEnd=0;state.buzzed=false;
 var REST_MS=120000,wl=null;
-/* Pausen: Kniebeuge 3 min, übrige Grundübungen 2 min (REST_MS), Isolation 90 s, Waden/Plank 60 s */
-var REST_EX={e_la_squat:180000,e_ua_seit:90000,e_ua_tri:90000,e_ua_bic:90000,e_la_curl:90000,e_la_ext:90000,e_la_calf:60000,e_lb_plank:60000};
+/* Pausen: Kniebeuge 3 min, übrige Grundübungen 2 min (REST_MS), Isolation 90 s, Waden/Bauch 60 s */
+var REST_EX={e_la_squat:180000,e_ua_seit:90000,e_ua_tri:90000,e_ua_bic:90000,e_la_curl:90000,e_la_ext:90000,e_la_calf:60000,e_la_crunch:60000,e_lb_plank:60000};
 function restMs(x){return (x&&REST_EX[x.id])||REST_MS}
 function cdFmt(ms){var s=Math.ceil(ms/1000);return pad(Math.floor(s/60))+':'+pad(s%60)}
 function updatePill(){
