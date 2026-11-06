@@ -1268,7 +1268,7 @@ var CFG={
   e_la_squat:{type:'barbell',repMin:6,repMax:10,sets:3,noFailure:true},
   e_la_rdl:{type:'barbell',repMin:8,repMax:12,sets:3,noFailure:true},
   e_la_bss:{type:'dumbbell',repMin:8,repMax:12,sets:2,noFailure:true},
-  e_la_curl:{type:'machine',repMin:10,repMax:15,sets:3},
+  e_la_curl:{type:'machine',repMin:10,repMax:15,sets:3,inc:5},
   e_la_ext:{type:'machine',repMin:10,repMax:15,sets:2},
   e_la_calf:{type:'dumbbell',repMin:10,repMax:15,sets:3},
   e_la_crunch:{type:'dumbbell',repMin:10,repMax:15,sets:3}
@@ -1279,7 +1279,7 @@ var EST={
     var l=lastSession('e_la_ext',state.date),top=0;
     if(l)l.sets.forEach(function(s){if(s.w>top)top=s.w});
     var tail=' Ziel 10 bis 15 saubere Wdh., der letzte Satz darf bis zum Muskelversagen gehen. Nach dem ersten Training passt sich die Empfehlung an.';
-    if(top>0){var w=snapDown('machine',top*0.75);return {w:w,note:'Noch keine Daten, deshalb geschätzt: Beim Beinstrecker hattest du zuletzt '+fmtNum(top)+' kg. Der Beinbeuger geht meist etwa ein Viertel leichter, daher '+fmtNum(w)+' kg.'+tail}}
+    if(top>0){var w=snapDown('machine',top*0.75,5);return {w:w,note:'Noch keine Daten, deshalb geschätzt: Beim Beinstrecker hattest du zuletzt '+fmtNum(top)+' kg. Der Beinbeuger geht meist etwa ein Viertel leichter, daher '+fmtNum(w)+' kg.'+tail}}
     return {w:15,note:'Noch keine Daten, deshalb geschätzt: 15 kg. Der Beinbeuger trainiert die Oberschenkel-Rückseite und geht meist etwas leichter als der Beinstrecker.'+tail};
   },
   e_la_rdl:{w:30,note:'Noch keine Daten, deshalb geschätzt: Deine Kniebeuge lief mit 25 kg locker (10 bis 12 Wdh.). Rumänisches Kreuzheben geht meist etwas schwerer, daher 30 kg als Startwert. Nach dem ersten Training passt sich die Empfehlung an deine Zahlen an.'},
@@ -1299,11 +1299,14 @@ function gRec(x){
   var est=EST[x.id];
   if(typeof est==='function')est=out.length?null:est();
   if(!out.length&&est)return {w:est.w,repsMin:c.repMin,repsMax:c.repMax,mode:'work',action:'est',sets:c.sets,note:est.note,lastSetFailure:false,daysSince:null};
-  try{return recommend({name:x.name,type:c.type,repMin:c.repMin,repMax:c.repMax,sets:c.sets,allowFailure:true,noFailure:c.noFailure===true,weights:c.type==='barbell'?BAR5:null},out,today)}catch(err){return null}
+  try{return recommend({name:x.name,type:c.type,repMin:c.repMin,repMax:c.repMax,sets:c.sets,allowFailure:true,noFailure:c.noFailure===true,weights:c.type==='barbell'?BAR5:(c.inc?incGrid(c.inc):null)},out,today)}catch(err){return null}
 }
 /* Langhantel: nur 5-kg-Sprünge möglich (kleinste Scheibe 2,5 kg pro Seite) */
 var BAR5=[];for(var bw=20;bw<=300;bw+=5)BAR5.push(bw);
-function snapDown(type,w){
+function incOf(c){return c?(c.inc||(c.type==='barbell'?5:0)):0}
+function incGrid(inc){var g=[];for(var v=inc;v<=300;v+=inc)g.push(v);return g}
+function snapDown(type,w,inc){
+  if(inc&&type!=='barbell')return Math.max(inc,Math.floor(w/inc+1e-9)*inc);
   if(type==='barbell')return Math.max(20,Math.floor(w/5+1e-9)*5);
   if(type==='dumbbell'){
     var g=[1,2,3,4,5,7.5,10],i,b=1;
@@ -1318,8 +1321,8 @@ function gAdjust(x,ls){
   if(!c||!ls||!(ls.w>0)||!(ls.r>0)||!(ls.r<c.repMin-1))return null;
   var e1=ls.w*(1+ls.r/30);
   var cand=Math.max(e1/(1+(c.repMin+1)/30),ls.w*0.75);
-  var nw=snapDown(c.type,cand);
-  if(nw>=ls.w-1e-9)nw=snapDown(c.type,ls.w-0.01);
+  var nw=snapDown(c.type,cand,c.inc);
+  if(nw>=ls.w-1e-9)nw=snapDown(c.type,ls.w-0.01,c.inc);
   if(!(nw>0&&nw<ls.w-1e-9))return null;
   return {ex:x.id,w:nw,from:ls.w,r:ls.r};
 }
@@ -1403,8 +1406,8 @@ function holdTarget(x,n){
   return {t:p.r+5,last:p.r};
 }
 function secFmt(sec){return pad(Math.floor(sec/60))+':'+pad(sec%60)}
-function wUp(w,t){if(t==='barbell')return (Math.floor(w/5+1e-9)+1)*5;return w<5?w+1:(Math.floor(w/2.5+1e-9)+1)*2.5}
-function wDown(w,t){if(t==='barbell')return Math.max(0,(Math.ceil(w/5-1e-9)-1)*5);return w<=5?Math.max(0,w-1):(Math.ceil(w/2.5-1e-9)-1)*2.5}
+function wUp(w,inc){if(inc)return (Math.floor(w/inc+1e-9)+1)*inc;return w<5?w+1:(Math.floor(w/2.5+1e-9)+1)*2.5}
+function wDown(w,inc){if(inc)return Math.max(0,(Math.ceil(w/inc-1e-9)-1)*inc);return w<=5?Math.max(0,w-1):(Math.ceil(w/2.5-1e-9)-1)*2.5}
 function commitSet(id){
   var today=state.date;
   if(!state.gd||state.gd.ex!==id||!(state.gd.r>0))return null;
@@ -1512,7 +1515,7 @@ app.addEventListener('click',function(e){
   }
   else if(a==='gy-note'){state.showNote=!state.showNote;render()}
   else if(a==='gy-back'){state.hold=null;state.gmode='work';render()}
-  else if(a==='gy-w'&&state.gd){var ty=x&&CFG[x.id]?CFG[x.id].type:'';state.gd.w=d>0?wUp(state.gd.w,ty):wDown(state.gd.w,ty);render()}
+  else if(a==='gy-w'&&state.gd){var inc=incOf(x&&CFG[x.id]);state.gd.w=d>0?wUp(state.gd.w,inc):wDown(state.gd.w,inc);render()}
   else if(a==='gy-r'&&state.gd){var st=isTimed(x)?5:1;state.gd.r=Math.max(1,state.gd.r+d*st);render()}
   else if(a==='gy-next'){state.gmode='work';render();window.scrollTo(0,0)}
   else if(a==='gy-save'){
