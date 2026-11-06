@@ -431,7 +431,7 @@ function onSnap(snap){
 }
 /* ---------- Lokaler Speicher (nur auf diesem Gerät) ---------- */
 var STORE_KEY='trainingslog.data.v1';
-var DEFAULT_DOCS={exercises:{"items": [{"groups": ["Upper A"], "id": "e_ua_bank", "name": "Bankdrücken", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_row", "name": "Vorgebeugtes Langhantelrudern", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_schulter", "name": "Schulterdrücken", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_lat", "name": "Latzug (Obergriff)", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_seit", "name": "Seitheben", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_tri", "name": "Trizepsdrücken am Kabel", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_bic", "name": "Bizeps Curls", "removed": false}, {"groups": ["Lower A"], "id": "e_la_squat", "name": "Kniebeuge Langhantel", "removed": false}, {"groups": ["Lower A"], "id": "e_la_curl", "name": "Beinbeuger", "removed": false}, {"groups": ["Lower A"], "id": "e_la_rdl", "name": "Rumänisches Kreuzheben", "removed": true}, {"groups": ["Lower A"], "id": "e_la_ext", "name": "Beinstrecker", "removed": false}, {"groups": ["Lower A"], "id": "e_la_bss", "name": "Bulgarische Split Squats", "removed": true}, {"groups": ["Lower A"], "id": "e_la_calfbb", "name": "Wadenheben Langhantel", "removed": false}, {"groups": ["Lower A"], "id": "e_la_crunch", "name": "Bauchcrunches mit Gewicht", "removed": false}, {"groups": ["Lower A"], "id": "e_lb_plank", "name": "Plank", "removed": true}]}};
+var DEFAULT_DOCS={exercises:{"items": [{"groups": ["Upper A"], "id": "e_ua_bank", "name": "Bankdrücken", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_row", "name": "Vorgebeugtes Langhantelrudern", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_schulter", "name": "Schulterdrücken", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_lat", "name": "Latzug (Obergriff)", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_seit", "name": "Seitheben", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_tri", "name": "Trizepsdrücken am Kabel", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_bic", "name": "Bizeps Curls", "removed": false}, {"groups": ["Lower A"], "id": "e_la_squat", "name": "Kniebeuge Langhantel", "removed": false}, {"groups": ["Lower A"], "id": "e_la_curl", "name": "Beinbeuger", "removed": false}, {"groups": ["Lower A"], "id": "e_la_rdl", "name": "Rumänisches Kreuzheben", "removed": true}, {"groups": ["Lower A"], "id": "e_la_ext", "name": "Beinstrecker", "removed": false}, {"groups": ["Lower A"], "id": "e_la_bss", "name": "Bulgarische Split Squats", "removed": true}, {"groups": ["Lower A"], "id": "e_la_calfbb", "name": "Wadenheben Langhantel", "removed": false}, {"groups": ["Lower A"], "id": "e_la_rev", "name": "Reverse Crunches", "removed": false}, {"groups": ["Lower A"], "id": "e_la_crunch", "name": "Bauchcrunches mit Gewicht", "removed": true}, {"groups": ["Lower A"], "id": "e_lb_plank", "name": "Plank", "removed": true}]}};
 var store=null;
 function persist(){localStorage.setItem(STORE_KEY,JSON.stringify(store))}
 var localDb={doc:function(path){
@@ -503,6 +503,17 @@ function migrateCalfBar(){
   else{i=it.findIndex(function(x){return x&&x.id==='e_la_crunch'});if(i<0)i=it.length}
   it.splice(i,0,{id:'e_la_calfbb',name:'Wadenheben Langhantel',groups:g,removed:rm});
 }
+/* Einmalig: Reverse Crunches statt Bauchcrunches mit Gewicht. Verlauf bleibt, Crunches nur ausgeblendet. */
+function migrateRev(){
+  var ex=store.docs.exercises,it=ex&&Array.isArray(ex.items)?ex.items:null;
+  if(!it||it.some(function(x){return x&&x.id==='e_la_rev'}))return;
+  try{localStorage.setItem(STORE_KEY+'.premig',JSON.stringify(store))}catch(e){}
+  var i=it.findIndex(function(x){return x&&x.id==='e_la_crunch'}),g=['Lower A'];
+  if(i>=0){if(Array.isArray(it[i].groups)&&it[i].groups.length)g=it[i].groups.slice();it[i].removed=true}
+  else{i=it.findIndex(function(x){return x&&(x.id==='e_la_calfbb'||x.id==='e_la_calf')});i=i>=0?i+1:it.length}
+  it.forEach(function(x){if(x&&!x.removed&&/reverse/i.test(x.name||''))x.removed=true});
+  it.splice(i,0,{id:'e_la_rev',name:'Reverse Crunches',groups:g,removed:false});
+}
 function boot(){
   try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
   var raw=null,ok=true;
@@ -520,7 +531,7 @@ function boot(){
     st={docs:JSON.parse(JSON.stringify(DEFAULT_DOCS)),backupAt:null,createdAt:Date.now()};
   }
   store=st;db=localDb;
-  migrateExt();migrateCurl();migrateCrunch();migrateCalfBar();
+  migrateExt();migrateCurl();migrateCrunch();migrateCalfBar();migrateRev();
   try{persist()}catch(e){state.dbOff=true}
   loadAll();
   state.loaded=true;setStatus(state.dbOff?'Speichern nicht möglich':'Gespeichert',state.dbOff?'bad':'');
@@ -601,7 +612,7 @@ function applyImport(){
   var p=state.bkPending;if(!p)return;
   try{localStorage.setItem(STORE_KEY+'.prev',JSON.stringify(store))}catch(e){}
   timers.forEach(function(t){clearTimeout(t)});timers.clear();builders.clear();again.clear();
-  store.docs=p.docs;migrateExt();migrateCurl();migrateCrunch();migrateCalfBar();
+  store.docs=p.docs;migrateExt();migrateCurl();migrateCrunch();migrateCalfBar();migrateRev();
   try{persist()}catch(e){bkMsg('Einspielen fehlgeschlagen: Speicher voll oder gesperrt.',true);state.bkPending=null;render();return}
   loadAll();state.bkPending=null;bkMsg('Backup eingespielt.');setStatus('Gespeichert');render();
 }
@@ -1292,9 +1303,11 @@ var CFG={
   e_la_ext:{type:'machine',repMin:10,repMax:15,sets:2,lb:15,lb0:10},
   e_la_calf:{type:'dumbbell',repMin:10,repMax:15,sets:3},
   e_la_calfbb:{type:'barbell',repMin:10,repMax:15,sets:3,snapHist:true},
-  e_la_crunch:{type:'dumbbell',repMin:10,repMax:15,sets:3}
+  e_la_crunch:{type:'dumbbell',repMin:10,repMax:15,sets:3},
+  e_la_rev:{type:'bodyweight',repMin:12,repMax:20,sets:3}
 };
 var EST={
+  e_la_rev:{w:0,hint:'Ohne Schwung · langsam ablassen',note:'Auf den Rücken, Beine angewinkelt, Hände neben dem Körper. Knie Richtung Brust ziehen und dabei den Po vom Boden abrollen, dann in 2 Sekunden wieder ablassen, ohne Schwung. Ziel 12 bis 20 Wdh., der letzte Satz darf bis zum Muskelversagen gehen. Schaffst du in allen Sätzen 20, schlägt die App Zusatzgewicht vor (Kurzhantel zwischen die Füße).'},
   e_la_calfbb:{w:20,note:'Noch keine Daten, deshalb geschätzt: 20 kg Gesamtgewicht (leere Langhantel). Wenn die letzten Wiederholungen mit 2 bis 3 Reserve gehen, steigere nächstes Mal. Nach dem ersten Training passt sich die Empfehlung an.'},
   e_la_crunch:{w:5,note:'Noch keine Daten, deshalb geschätzt: 5 kg (Kurzhantel oder Scheibe auf der Brust). Langsam hochrollen, oben kurz anspannen, nicht am Nacken ziehen. Ziel 10 bis 15 Wdh., der letzte Satz darf bis zum Muskelversagen gehen. Nach dem ersten Training passt sich die Empfehlung an.'},
   e_la_curl:function(){
@@ -1320,7 +1333,7 @@ function gRec(x){
   });
   var est=EST[x.id];
   if(typeof est==='function')est=out.length?null:est();
-  if(!out.length&&est)return {w:est.w,repsMin:c.repMin,repsMax:c.repMax,mode:'work',action:'est',sets:c.sets,note:est.note,lastSetFailure:false,daysSince:null};
+  if(!out.length&&est)return {w:est.w,hint:est.hint,repsMin:c.repMin,repsMax:c.repMax,mode:'work',action:'est',sets:c.sets,note:est.note,lastSetFailure:false,daysSince:null};
   try{return recommend({name:x.name,type:c.type,repMin:c.repMin,repMax:c.repMax,sets:c.sets,allowFailure:true,noFailure:c.noFailure===true,weights:gridOf(c)},out,today)}catch(err){return null}
 }
 /* Langhantel: nur 5-kg-Sprünge möglich (kleinste Scheibe 2,5 kg pro Seite) */
@@ -1373,12 +1386,13 @@ function adjRec(rec,x){
 var ACT_TXT={deload:'Entlastung: bewusst locker',break:'Wiedereinstieg nach Pause: locker anfangen',start:'Startgewicht selbst wählen',est:'Geschätzter Startwert'};
 function targetHtml(rec,n,planned,c){
   var isLast=n+1>=planned,fail=rec.mode==='failure'&&isLast;
-  var wTxt=rec.w!=null?fmtNum(rec.w):'?';
+  var bw=c&&c.type==='bodyweight';
+  var wTxt=rec.w!=null?(bw?(rec.w>0?'+'+fmtNum(rec.w):'Ohne'):fmtNum(rec.w)):'?';
   var rTxt=rec.repsMin===rec.repsMax?String(rec.repsMax):rec.repsMin+'–'+rec.repsMax;
   var hint=rec.hint||ACT_TXT[rec.action]||'';
   if(rec.mode==='failure'&&!isLast)hint+=(hint?' · ':'')+'Stopp bei '+rec.repsMax;
   var lbt=lbTxt(c,rec.w);
-  var h='<div class="gtgt"><span><span class="n">'+esc(wTxt)+'</span><span class="u">kg'+(lbt?' · '+esc(lbt):'')+'</span></span>'
+  var h='<div class="gtgt"><span><span class="n">'+esc(wTxt)+'</span><span class="u">'+(bw?(rec.w>0?'kg Zusatz':'Gewicht'):'kg')+(lbt?' · '+esc(lbt):'')+'</span></span>'
     +(fail?'<span><span class="n">Max</span><span class="u">Wdh. bis Versagen</span></span>':'<span><span class="n">'+rTxt+'</span><span class="u">Wdh.</span></span>')+'</div>'
     +'<button class="ghintb" type="button" data-act="gy-note">'+(hint?esc(hint)+' · ':'')+'<u>Warum?</u></button>';
   if(state.showNote)h+='<p class="gnote">'+esc(rec.note)+'</p>';
@@ -1389,7 +1403,7 @@ function targetHtml(rec,n,planned,c){
 state.gmode='work';state.gx=null;state.open=null;state.showNote=false;state.adj=null;state.restOn=false;state.planned={};state.restEnd=0;state.buzzed=false;
 var REST_MS=120000,wl=null;
 /* Pausen: Kniebeuge 3 min, übrige Grundübungen 2 min (REST_MS), Isolation 90 s, Waden/Bauch 60 s */
-var REST_EX={e_la_squat:180000,e_ua_seit:90000,e_ua_tri:90000,e_ua_bic:90000,e_la_curl:90000,e_la_ext:90000,e_la_calf:60000,e_la_calfbb:60000,e_la_crunch:60000,e_lb_plank:60000};
+var REST_EX={e_la_squat:180000,e_ua_seit:90000,e_ua_tri:90000,e_ua_bic:90000,e_la_curl:90000,e_la_ext:90000,e_la_calf:60000,e_la_calfbb:60000,e_la_crunch:60000,e_la_rev:60000,e_lb_plank:60000};
 function restMs(x){return (x&&REST_EX[x.id])||REST_MS}
 function cdFmt(ms){var s=Math.ceil(ms/1000);return pad(Math.floor(s/60))+':'+pad(s%60)}
 function updatePill(){
@@ -1496,7 +1510,7 @@ function gymView(){
       var nr=rec?adjRec(rec,x):null,nw=nr?nr.w:(d.w>0?d.w:null),nrp;
       if(tm){var ht=holdTarget(x,n);nw=null;nrp='Ziel '+ht.t+' s'}
       else if(nr){nrp=(nr.mode==='failure'&&n+1>=planned)?'Max Wdh.':(nr.repsMin===nr.repsMax?nr.repsMax:nr.repsMin+'–'+nr.repsMax)+' Wdh.'}else nrp=d.r+' Wdh.';
-      nxtTxt+='</p><p class="gnext">'+(nw!=null?esc(fmtNum(nw))+' kg'+(lbTxt(CFG[x.id],nw)?' ('+esc(lbTxt(CFG[x.id],nw))+')':'')+' · ':'')+esc(String(nrp));
+      nxtTxt+='</p><p class="gnext">'+(nw>0?esc(fmtNum(nw))+' kg'+(lbTxt(CFG[x.id],nw)?' ('+esc(lbTxt(CFG[x.id],nw))+')':'')+' · ':'')+esc(String(nrp));
       return '<div class="gym"><div><p class="gsub">Pause</p><h2 class="gname">'+esc(x.name)+'</h2></div>'
         +'<div class="gmid"><span class="gt gt2'+(rem===0?' over':'')+'" id="gtime" role="timer" aria-label="Pause">'+cdFmt(rem)+'</span><p class="ghint">'+nxtTxt+'</p></div>'
         +'<button class="gsave" type="button" data-act="gy-next">Weiter geht’s!</button>'
@@ -1506,7 +1520,7 @@ function gymView(){
       +(state.restOn?'<span class="gts">Pause <span id="gtime">'+cdFmt(rem)+'</span></span>':'')
       +'<p class="ghint">Was hast du geschafft?</p>'
       +(tm?adjRow('gy-r',d.r,'Sekunden','5 Sekunden weniger','5 Sekunden mehr')
-        :adjRow('gy-w',esc(fmtNum(d.w)),'kg'+(lbTxt(CFG[x.id],d.w)?' · '+lbTxt(CFG[x.id],d.w):''),'Gewicht weniger','Gewicht mehr')+adjRow('gy-r',d.r,'Wdh.','Wiederholungen weniger','Wiederholungen mehr'))+'</div>'
+        :adjRow('gy-w',esc(fmtNum(d.w)),(CFG[x.id]&&CFG[x.id].type==='bodyweight'?'kg Zusatz':'kg')+(lbTxt(CFG[x.id],d.w)?' · '+lbTxt(CFG[x.id],d.w):''),'Gewicht weniger','Gewicht mehr')+adjRow('gy-r',d.r,'Wdh.','Wiederholungen weniger','Wiederholungen mehr'))+'</div>'
       +'<button class="gsave" type="button" data-act="gy-save">Speichern</button>'
       +'<div class="glinks"><button class="glink" type="button" data-act="gy-back">Satz verwerfen</button>'
       +'<button class="glink" type="button" data-act="gy-exit">Zur Übersicht</button></div></div>';
