@@ -431,7 +431,7 @@ function onSnap(snap){
 }
 /* ---------- Lokaler Speicher (nur auf diesem Gerät) ---------- */
 var STORE_KEY='trainingslog.data.v1';
-var DEFAULT_DOCS={exercises:{"items": [{"groups": ["Upper A"], "id": "e_ua_bank", "name": "Bankdrücken", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_row", "name": "Vorgebeugtes Langhantelrudern", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_schulter", "name": "Schulterdrücken", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_lat", "name": "Latzug (Obergriff)", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_seit", "name": "Seitheben", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_tri", "name": "Trizepsdrücken am Kabel", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_bic", "name": "Bizeps Curls", "removed": false}, {"groups": ["Lower A"], "id": "e_la_squat", "name": "Kniebeuge Langhantel", "removed": false}, {"groups": ["Lower A"], "id": "e_la_curl", "name": "Beinbeuger", "removed": false}, {"groups": ["Lower A"], "id": "e_la_rdl", "name": "Rumänisches Kreuzheben", "removed": true}, {"groups": ["Lower A"], "id": "e_la_ext", "name": "Beinstrecker", "removed": false}, {"groups": ["Lower A"], "id": "e_la_bss", "name": "Bulgarische Split Squats", "removed": true}, {"groups": ["Lower A"], "id": "e_la_calfbb", "name": "Wadenheben Langhantel", "removed": false}, {"groups": ["Lower A"], "id": "e_la_rev", "name": "Reverse Crunches", "removed": false}, {"groups": ["Lower A"], "id": "e_la_crunch", "name": "Bauchcrunches mit Gewicht", "removed": true}, {"groups": ["Lower A"], "id": "e_lb_plank", "name": "Plank", "removed": true}]}};
+var DEFAULT_DOCS={exercises:{"items": [{"groups": ["Upper A"], "id": "e_ua_bank", "name": "Bankdrücken", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_lowrow", "name": "Low Row Maschine", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_schulter", "name": "Schulterdrücken", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_lat", "name": "Latzug (Obergriff)", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_seit", "name": "Seitheben", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_tri", "name": "Trizepsdrücken am Kabel", "removed": false}, {"groups": ["Upper A"], "id": "e_ua_bic", "name": "Bizeps Curls", "removed": false}, {"groups": ["Lower A"], "id": "e_la_squat", "name": "Kniebeuge Langhantel", "removed": false}, {"groups": ["Lower A"], "id": "e_la_curl", "name": "Beinbeuger", "removed": false}, {"groups": ["Lower A"], "id": "e_la_rdl", "name": "Rumänisches Kreuzheben", "removed": true}, {"groups": ["Lower A"], "id": "e_la_ext", "name": "Beinstrecker", "removed": false}, {"groups": ["Lower A"], "id": "e_la_bss", "name": "Bulgarische Split Squats", "removed": true}, {"groups": ["Lower A"], "id": "e_la_calfbb", "name": "Wadenheben Langhantel", "removed": false}, {"groups": ["Lower A"], "id": "e_la_rev", "name": "Reverse Crunches", "removed": false}, {"groups": ["Lower A"], "id": "e_la_crunch", "name": "Bauchcrunches mit Gewicht", "removed": true}, {"groups": ["Lower A"], "id": "e_lb_plank", "name": "Plank", "removed": true}]}};
 var store=null;
 function persist(){localStorage.setItem(STORE_KEY,JSON.stringify(store))}
 var localDb={doc:function(path){
@@ -514,6 +514,30 @@ function migrateRev(){
   it.forEach(function(x){if(x&&!x.removed&&/reverse/i.test(x.name||''))x.removed=true});
   it.splice(i,0,{id:'e_la_rev',name:'Reverse Crunches',groups:g,removed:false});
 }
+/* Einmalig: Langhantelrudern -> Low Row Maschine (Technogym), nahtlos.
+   Einträge vor dem 16.11.2026 werden so umgerechnet, dass das letzte Langhantel-Training dem Low-Row-Startgewicht 45 kg entspricht. */
+function migrateLowRow(){
+  var ex=store.docs.exercises,it=ex&&Array.isArray(ex.items)?ex.items:null;
+  if(!it||it.some(function(x){return x&&x.id==='e_ua_lowrow'}))return;
+  try{localStorage.setItem(STORE_KEY+'.premig',JSON.stringify(store))}catch(e){}
+  var CUT='2026-11-16',keys=Object.keys(store.docs).filter(function(k){return k.indexOf('day-')===0}).sort(),lastW=0;
+  keys.forEach(function(k){var d=k.slice(4),en=store.docs[k]&&store.docs[k].entries,e=en&&en.e_ua_row;
+    if(d<CUT&&e&&Array.isArray(e.sets)){var m=0;e.sets.forEach(function(t){if(t&&t.r>0&&t.w>m)m=t.w});if(m>0)lastW=m}});
+  var f=lastW>0?45/lastW:1;
+  keys.forEach(function(k){
+    var d=k.slice(4),en=store.docs[k]&&store.docs[k].entries;
+    if(!en||!en.e_ua_row)return;
+    var sets=(Array.isArray(en.e_ua_row.sets)?en.e_ua_row.sets:[]).map(function(t){
+      var w=t?t.w:null;if(d<CUT&&typeof w==='number')w=Math.round(w*f*10)/10;return {w:w,r:t?t.r:null};
+    });
+    if(!en.e_ua_lowrow)en.e_ua_lowrow={sets:sets};
+    delete en.e_ua_row;
+  });
+  var i=it.findIndex(function(x){return x&&x.id==='e_ua_row'}),g=['Upper A'],rm=false;
+  if(i>=0){if(Array.isArray(it[i].groups)&&it[i].groups.length)g=it[i].groups.slice();rm=!!it[i].removed;it.splice(i,1)}
+  else{i=it.findIndex(function(x){return x&&x.id==='e_ua_bank'});i=i>=0?i+1:it.length}
+  it.splice(i,0,{id:'e_ua_lowrow',name:'Low Row Maschine',groups:g,removed:rm});
+}
 function boot(){
   try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
   var raw=null,ok=true;
@@ -531,7 +555,7 @@ function boot(){
     st={docs:JSON.parse(JSON.stringify(DEFAULT_DOCS)),backupAt:null,createdAt:Date.now()};
   }
   store=st;db=localDb;
-  migrateExt();migrateCurl();migrateCrunch();migrateCalfBar();migrateRev();
+  migrateExt();migrateCurl();migrateCrunch();migrateCalfBar();migrateRev();migrateLowRow();
   try{persist()}catch(e){state.dbOff=true}
   loadAll();
   state.loaded=true;setStatus(state.dbOff?'Speichern nicht möglich':'Gespeichert',state.dbOff?'bad':'');
@@ -612,7 +636,7 @@ function applyImport(){
   var p=state.bkPending;if(!p)return;
   try{localStorage.setItem(STORE_KEY+'.prev',JSON.stringify(store))}catch(e){}
   timers.forEach(function(t){clearTimeout(t)});timers.clear();builders.clear();again.clear();
-  store.docs=p.docs;migrateExt();migrateCurl();migrateCrunch();migrateCalfBar();migrateRev();
+  store.docs=p.docs;migrateExt();migrateCurl();migrateCrunch();migrateCalfBar();migrateRev();migrateLowRow();
   try{persist()}catch(e){bkMsg('Einspielen fehlgeschlagen: Speicher voll oder gesperrt.',true);state.bkPending=null;render();return}
   loadAll();state.bkPending=null;bkMsg('Backup eingespielt.');setStatus('Gespeichert');render();
 }
@@ -1291,6 +1315,7 @@ function recommend(exercise, sessions, today) {
 var CFG={
   e_ua_bank:{type:'barbell',repMin:6,repMax:10,sets:3},
   e_ua_row:{type:'barbell',repMin:6,repMax:10,sets:3},
+  e_ua_lowrow:{type:'machine',repMin:6,repMax:10,sets:3},
   e_ua_schulter:{type:'dumbbell',repMin:8,repMax:12,sets:2},
   e_ua_lat:{type:'cable',repMin:8,repMax:12,sets:2},
   e_ua_seit:{type:'dumbbell',repMin:12,repMax:20,sets:2},
@@ -1307,6 +1332,7 @@ var CFG={
   e_la_rev:{type:'bodyweight',repMin:12,repMax:20,sets:3}
 };
 var EST={
+  e_ua_lowrow:{w:45,note:'Noch keine Daten, deshalb: 45 kg (dein Low-Row-Startgewicht). Ziel 6 bis 10 Wdh., der letzte Satz darf bis zum Muskelversagen gehen.'},
   e_la_rev:{w:0,hint:'Ohne Schwung · langsam ablassen',note:'Auf den Rücken, Beine angewinkelt, Hände neben dem Körper. Knie Richtung Brust ziehen und dabei den Po vom Boden abrollen, dann in 2 Sekunden wieder ablassen, ohne Schwung. Ziel 12 bis 20 Wdh., der letzte Satz darf bis zum Muskelversagen gehen. Schaffst du in allen Sätzen 20, schlägt die App Zusatzgewicht vor (Kurzhantel zwischen die Füße).'},
   e_la_calfbb:{w:20,note:'Noch keine Daten, deshalb geschätzt: 20 kg Gesamtgewicht (leere Langhantel). Wenn die letzten Wiederholungen mit 2 bis 3 Reserve gehen, steigere nächstes Mal. Nach dem ersten Training passt sich die Empfehlung an.'},
   e_la_crunch:{w:5,note:'Noch keine Daten, deshalb geschätzt: 5 kg (Kurzhantel oder Scheibe auf der Brust). Langsam hochrollen, oben kurz anspannen, nicht am Nacken ziehen. Ziel 10 bis 15 Wdh., der letzte Satz darf bis zum Muskelversagen gehen. Nach dem ersten Training passt sich die Empfehlung an.'},
