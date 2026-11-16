@@ -176,16 +176,58 @@ h2{margin:22px 0 8px;font:600 14px var(--font-head);letter-spacing:.1em;text-tra
 .ovrow .ot.dim{color:var(--muted);font-weight:400}
 .ovrow svg{display:block;width:64px;height:24px}
 .spl{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
-/* Konstanz: Spalte = Woche, Zeile = Wochentag. Gefuellt = trainiert, Rahmen = geplant, gestrichelt = ausgefallen. */
-.wk{display:grid;gap:5px 0;align-items:center;justify-items:center;padding:12px 8px 10px}
-.wk .wl{justify-self:start;padding-left:4px;font:600 12px var(--font-head);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.wk .wc{width:18px;height:18px;border-radius:5px}
-.wk .wc.on{background:var(--ink)}
-.wk .wc.open{border:1.5px solid var(--muted);opacity:.45}
-.wk .wc.miss{background:var(--soft);border:1.5px dashed var(--muted)}
-.wk .wn{margin-top:3px;font:700 16px/1 var(--font-head);font-variant-numeric:tabular-nums}
-.wk .wn.low{color:var(--muted);font-weight:500}
-.wk .wd{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+/* Auswertung: Datenmarken in Tinte und Grau, Rot nur fuer das Aktuelle (laufende Woche, letzter Satz). */
+.fig{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 12px 10px}
+.fig svg{display:block;width:100%;height:auto}
+.readout{margin:8px 0 0;min-height:19px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.hit{fill:transparent;cursor:pointer}
+.hit.sel{fill:var(--soft)}
+.col{fill:var(--ink);pointer-events:none}
+.col.now{fill:var(--accent)}
+.cap{fill:var(--ink);font:600 12px var(--font-ui);pointer-events:none}
+.s1{fill:none;stroke:var(--ink);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;pointer-events:none}
+.sl{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;pointer-events:none}
+.d1{fill:var(--ink);stroke:var(--surface);stroke-width:2;pointer-events:none}
+.dl{fill:var(--accent);stroke:var(--surface);stroke-width:2;pointer-events:none}
+.dl.in{stroke-width:1.5}
+.dm{fill:var(--muted);pointer-events:none}
+.dx{fill:var(--surface);stroke:var(--muted);stroke-width:1.5;pointer-events:none}
+.wband{stroke:var(--muted);stroke-width:2;stroke-linecap:round;pointer-events:none}
+.wlab{fill:var(--ink);font:600 11px var(--font-ui);font-variant-numeric:tabular-nums;pointer-events:none}
+.goal{stroke:var(--muted);stroke-dasharray:4 4;stroke-width:1;pointer-events:none}
+.keys{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 0 0;font-size:13px;color:var(--muted)}
+.keys span{display:inline-flex;align-items:center;gap:6px}
+.keys i{display:inline-block;width:16px;height:3px;border-radius:2px;background:var(--ink)}
+.keys i.a{background:var(--accent)}
+.keys i.m{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.hero{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin:2px 0 10px}
+.hero .big{font:700 56px/1 var(--font-head)}
+.hero .sub{flex:1 1 180px;color:var(--muted);font-size:14px}
+.snav{display:grid;grid-template-columns:44px 1fr 44px;gap:8px;align-items:center;margin-bottom:10px}
+.snav button{height:44px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:20px;font-weight:600;line-height:1}
+.snav button:disabled{opacity:.35}
+.snav .sw{text-align:center;font-weight:600}
+.snav .sw small{display:block;font-weight:400;font-size:13px;color:var(--muted)}
+.brow{display:grid;grid-template-columns:minmax(0,1fr) 28% 74px;gap:10px;align-items:center;width:100%;padding:9px 0;background:none;border:0;border-top:1px solid var(--line);text-align:left}
+.brow:first-child{border-top:0}
+.brow .bn{font-weight:600;line-height:1.2;overflow-wrap:anywhere}
+.brow .bs{display:block;margin-top:2px;font-weight:400;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.brow .bt{position:relative;height:10px}
+.brow .bt i{position:absolute;top:0;height:10px;background:var(--ink);border-radius:0 4px 4px 0}
+.brow .bt i.neg{background:var(--muted);border-radius:4px 0 0 4px}
+.brow .bt b{position:absolute;top:-4px;width:1px;height:18px;background:var(--line)}
+.brow .bv{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.brow .bv.dim{color:var(--muted);font-weight:400}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 0}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px}
+.tile b{display:block;font:700 24px/1.1 var(--font-head)}
+.tile span{display:block;margin-top:3px;font-size:12px;line-height:1.25;color:var(--muted)}
+.tile span+span{margin-top:0;font-variant-numeric:tabular-nums}
+.rrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.rrow .rn{font:700 18px/1.15 var(--font-head);overflow-wrap:anywhere}
+.rrow .rs{display:block;margin-top:2px;font:400 13px var(--font-ui);color:var(--muted);font-variant-numeric:tabular-nums}
+.rrow .rv{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.rrow .rv small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
 .sess{display:flex;gap:12px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;
   padding:10px 12px;margin-bottom:8px;align-items:baseline}
 .sess .sd{flex:0 0 92px;font-weight:600;font-variant-numeric:tabular-nums}
@@ -320,7 +362,8 @@ var state={
   edit:false,
   histEx:prefs.histEx||null,
   metric:['top','e1','vol'].indexOf(prefs.metric)>=0?prefs.metric:'top',
-  histView:['ex','mix'].indexOf(prefs.histView)>=0?prefs.histView:'all',
+  histView:['ex','mix','rec'].indexOf(prefs.histView)>=0?prefs.histView:'all',
+  sess:null,
   span:prefs.span==='all'?'all':'4w',
   hidden:{},showAvg:prefs.showAvg===true,
   autoFor:null,
@@ -858,52 +901,136 @@ function spark(vals){
   var d=vals.map(function(v,i){return (i?'L':'M')+(2+60*i/(vals.length-1)).toFixed(1)+' '+(22-20*(v-lo)/sp).toFixed(1)}).join(' ');
   return '<svg viewBox="0 0 64 24" aria-hidden="true"><path class="spl" d="'+d+'"/></svg>';
 }
-/* ---------- Konstanz: Trainingstage pro Woche (Montag bis Sonntag) ---------- */
-var WD_SHORT=['Mo','Di','Mi','Do','Fr','Sa','So'];
+/* ---------- Auswertung: Wochen, Last, Muskelgruppen ---------- */
 function weekStart(iso){var p=iso.split('-').map(Number);return shiftDate(iso,-((new Date(p[0],p[1]-1,p[2]).getDay()+6)%7))}
-function weekStats(dayList,today){
-  var tgt=Object.keys(WEEK_PLAN).length,set={},all=[];
-  dayList.forEach(function(d){set[d]=true});
-  if(!dayList.length)return null;
-  var cur=weekStart(today),s=weekStart(dayList[0]);
-  if(s>cur)return null;
-  while(s<shiftDate(cur,-7*520))s=shiftDate(s,7*52);
-  for(;s<=cur;s=shiftDate(s,7)){
-    var n=0,ds=[];
-    for(var k=0;k<7;k++){var t=!!set[shiftDate(s,k)];ds.push(t);if(t)n++}
-    all.push({start:s,n:n,days:ds});
-  }
-  // Volle Wochen in Folge; die laufende Woche unterbricht die Serie nicht, solange sie noch nicht voll ist
-  var streak=0;
-  for(var i=all.length-1;i>=0;i--){
-    if(all[i].n>=tgt)streak++;
-    else if(i<all.length-1)break;
-  }
-  return {tgt:tgt,cur:all[all.length-1],weeks:all.slice(-8),streak:streak};
+function trainDays(){
+  return Object.keys(state.days).filter(function(d){
+    return Object.keys(state.days[d]).some(function(id){return sessionStats(state.days[d][id].sets)});
+  }).sort();
 }
-function weekView(dayList){
-  var today=isoDate(new Date()),ws=weekStats(dayList,today);
-  if(!ws)return '';
-  var planned=function(k){return !!WEEK_PLAN[(k+1)%7]};
-  var rowsK=[];
-  for(var k=0;k<7;k++)if(planned(k)||ws.weeks.some(function(w){return w.days[k]}))rowsK.push(k);
-  var sub='diese Woche'+(ws.streak?' · '+ws.streak+(ws.streak===1?' volle Woche':' volle Wochen')+' in Folge':'');
-  var h='<h2>Konstanz</h2><div class="kpi"><span class="big">'+ws.cur.n+' von '+ws.tgt+'</span><span class="sub">'+sub+'</span></div>';
-  var label='Trainingstage pro Woche: '+ws.weeks.map(function(w){return 'Woche ab '+shortDate(w.start)+' '+w.n}).join(', ');
-  var g='<div class="chartbox wk" role="img" aria-label="'+esc(label)+'" style="grid-template-columns:30px repeat('+ws.weeks.length+',1fr)">';
-  rowsK.forEach(function(k){
-    g+='<span class="wl">'+WD_SHORT[k]+'</span>';
-    ws.weeks.forEach(function(w){
-      var d=shiftDate(w.start,k),c=w.days[k]?' on':(planned(k)&&d>=dayList[0])?(d<today?' miss':' open'):'';
-      g+='<span class="wc'+c+'"></span>';
-    });
+// Bewegtes Gewicht: Kurzhanteln sind pro Hand eingetragen und zählen deshalb doppelt
+function loadMult(id){var c=CFG[id];return c&&c.type==='dumbbell'&&id!=='e_la_crunch'?2:1}
+function dayLoad(d){
+  var e=state.days[d]||{},t=0;
+  Object.keys(e).forEach(function(id){var st=sessionStats(e[id].sets);if(st)t+=st.vol*loadMult(id)});
+  return t;
+}
+var MUSCLE={e_ua_bank:'Brust',e_ua_row:'Rücken',e_ua_lowrow:'Rücken',e_ua_lat:'Rücken',e_ua_schulter:'Schultern',e_ua_seit:'Schultern',e_ua_tri:'Trizeps',e_ua_bic:'Bizeps',
+  e_la_squat:'Beine vorn',e_la_ext:'Beine vorn',e_la_bss:'Beine vorn',e_la_curl:'Beine hinten',e_la_rdl:'Beine hinten',e_la_calf:'Waden',e_la_calfbb:'Waden',
+  e_la_crunch:'Bauch',e_la_rev:'Bauch',e_lb_plank:'Bauch'};
+var MUSCLE_RX=[[/crunch|plank|bauch|sit-?up|knieheben|beinheben/i,'Bauch'],[/waden|calf/i,'Waden'],[/beinbeuger|kreuzheben|leg ?curl|hip ?thrust|hyperext/i,'Beine hinten'],
+  [/kniebeuge|squat|beinstrecker|beinpresse|ausfallschritt|lunge/i,'Beine vorn'],[/bank|brust|butterfly|fly|dips|liegestütz/i,'Brust'],[/ruder|row|latz|klimm|pull/i,'Rücken'],
+  [/schulter|seitheb|face/i,'Schultern'],[/trizeps/i,'Trizeps'],[/bizeps|curl/i,'Bizeps']];
+var MUSCLE_ORDER=['Brust','Rücken','Schultern','Bizeps','Trizeps','Beine vorn','Beine hinten','Waden','Bauch','Sonstige'];
+function muscleOf(x){
+  if(MUSCLE[x.id])return MUSCLE[x.id];
+  for(var i=0;i<MUSCLE_RX.length;i++)if(MUSCLE_RX[i][0].test(x.name||''))return MUSCLE_RX[i][1];
+  return 'Sonstige';
+}
+var LOAD_CMP=[[1000,'Kleinwagen'],[5000,'Elefanten'],[12000,'Linienbussen'],[150000,'Blauwalen']];
+function loadCmp(kg){
+  var u=null;
+  LOAD_CMP.forEach(function(c){if(kg/c[0]>=1.5)u=c});
+  if(!u)return '';
+  var n=kg/u[0],t=n<10?fmtNum(Math.round(n*10)/10):String(Math.round(n));
+  return 'Das entspricht etwa '+t+' '+u[1]+'.';
+}
+function pctTxt(p){var r=Math.round(p);return (r>0?'+':r<0?'−':'±')+Math.abs(r)+' %'}
+/* Balkenzeilen an gemeinsamer Nulllinie: rows=[{name,sub,v,txt,ex}], v=null zeigt nur den Text */
+function barRows(rows){
+  var pos=0,neg=0;
+  rows.forEach(function(r){if(r.v>0&&r.v>pos)pos=r.v;if(r.v<0&&-r.v>neg)neg=-r.v});
+  var span=pos+neg||1,zero=neg/span*100;
+  return rows.map(function(r){
+    var bar='';
+    if(r.v){var w=Math.max(Math.abs(r.v)/span*100,1.5);bar='<i class="'+(r.v<0?'neg':'pos')+'" style="left:'+(r.v<0?Math.max(zero-w,0):zero).toFixed(1)+'%;width:'+w.toFixed(1)+'%"></i>'}
+    var inner='<span class="bn">'+esc(r.name)+(r.sub?'<span class="bs">'+esc(r.sub)+'</span>':'')+'</span>'
+      +'<span class="bt">'+(neg?'<b style="left:'+zero.toFixed(1)+'%"></b>':'')+bar+'</span>'
+      +'<span class="bv'+(r.v?'':' dim')+'">'+esc(r.txt)+'</span>';
+    return r.ex?'<button class="brow" type="button" data-act="goex" data-ex="'+esc(r.ex)+'">'+inner+'</button>':'<div class="brow">'+inner+'</div>';
+  }).join('');
+}
+/* ---------- Übersicht: eine Einheit im Vergleich zum Mal davor ---------- */
+function sessView(dayList){
+  var date=state.sess&&dayList.indexOf(state.sess)>=0?state.sess:dayList[dayList.length-1],i=dayList.indexOf(date);
+  var e=state.days[date]||{},rows=[],up=0,same=0,down=0,grp={};
+  state.items.forEach(function(x){
+    var st=e[x.id]&&sessionStats(e[x.id].sets);
+    if(!st)return;
+    (x.groups||[]).slice(0,1).forEach(function(g){grp[g]=(grp[g]||0)+1});
+    var prev=lastSession(x.id,date),pst=prev&&sessionStats(prev.sets);
+    var key=st.hasW&&(!pst||pst.hasW)?'e1':'reps';
+    var pct=pst&&pst[key]>0?(st[key]-pst[key])/pst[key]*100:null,r=pct==null?null:Math.round(pct),txt=r==null?'neu':pctTxt(r);
+    // Gleicher Bestwert bei gleichem Gewicht: dann entscheidet die Summe der Wiederholungen
+    if(r===0&&key==='e1'&&Math.abs(st.top-pst.top)<1e-9&&st.reps!==pst.reps&&pst.vol>0){
+      var dr=st.reps-pst.reps;
+      r=Math.round((st.vol-pst.vol)/pst.vol*100)||(dr>0?1:-1);
+      txt=(dr>0?'+':'−')+Math.abs(dr)+' Wdh.';
+    }
+    if(r!=null){if(r>0)up++;else if(r<0)down++;else same++}
+    rows.push({name:x.name,sub:compactSets(validSets(e[x.id].sets),isTimed(x)),v:r,txt:txt,ex:x.id});
   });
-  g+='<span></span>';
-  ws.weeks.forEach(function(w){g+='<span class="wn'+(w.n>=ws.tgt?'':' low')+'">'+w.n+'</span>'});
-  g+='<span></span>';
-  ws.weeks.forEach(function(w){g+='<span class="wd">'+esc(shortDate(w.start))+'</span>'});
-  g+='</div>';
-  return h+g+'<p class="small-note">Jede Spalte ist eine Woche ab Montag, die Zahl darunter zählt die Trainingstage. Gefüllt = trainiert, Rahmen = geplant, gestrichelt = ausgefallen.</p>';
+  var gname=Object.keys(grp).sort(function(a,b){return grp[b]-grp[a]})[0]||'';
+  var cmp=up+same+down;
+  var h='<h2>Einheit im Vergleich</h2><div class="snav">'
+    +'<button type="button" data-act="sess" data-date="'+(i>0?dayList[i-1]:'')+'" aria-label="Frühere Einheit"'+(i>0?'':' disabled')+'>‹</button>'
+    +'<span class="sw">'+esc(longDate(date))+(gname?'<small>'+esc(gname)+'</small>':'')+'</span>'
+    +'<button type="button" data-act="sess" data-date="'+(i<dayList.length-1?dayList[i+1]:'')+'" aria-label="Spätere Einheit"'+(i<dayList.length-1?'':' disabled')+'>›</button></div>';
+  if(cmp){
+    h+='<div class="hero"><span class="big">'+up+' von '+cmp+'</span><span class="sub">'+(cmp===1?'Übung':'Übungen')+' stärker als beim Mal davor'
+      +(same||down?' · '+[same?same+' gleich':'',down?down+' schwächer':''].filter(Boolean).join(', '):'')+'</span></div>';
+  }
+  h+='<div class="fig">'+barRows(rows)+'</div>';
+  return h+'<p class="small-note">Verglichen wird jede Übung mit ihrem vorigen Eintrag, gemessen an der geschätzten Maximalkraft aus dem besten Satz. Mehr Gewicht mit weniger Wiederholungen kann deshalb trotzdem ein Plus sein. Ist der Bestwert gleich, entscheidet die Summe der Wiederholungen.</p>';
+}
+/* ---------- Übersicht: bewegtes Gewicht pro Woche ---------- */
+function loadView(dayList){
+  var today=isoDate(new Date()),cur=weekStart(today),first=weekStart(dayList[0]),weeks=[],total=0,sets=0,reps=0;
+  dayList.forEach(function(d){
+    total+=dayLoad(d);
+    var e=state.days[d];Object.keys(e).forEach(function(id){var st=sessionStats(e[id].sets);if(st){sets+=validSets(e[id].sets).length;if(!isTimed(gItem(id)||{id:id}))reps+=st.reps}});
+  });
+  var s=cur<first?first:cur,end=s;
+  for(var k=0;k<12&&s>=first;k++,s=shiftDate(s,-7))weeks.unshift({start:s,kg:0,n:0});
+  dayList.forEach(function(d){var w=weekStart(d);weeks.forEach(function(x){if(x.start===w){x.kg+=dayLoad(d);x.n++}})});
+  var h='<h2>Bewegtes Gewicht</h2><div class="hero"><span class="big">'+esc(fmtNum(Math.round(total/100)/10))+' t</span><span class="sub">seit '+esc(shortDate(dayList[0]))+' in '+sets+' Sätzen und '+esc(fmtNum(reps))+' Wiederholungen. '+esc(loadCmp(total))+'</span></div>';
+  var W=360,H=190,L=34,R=8,T=20,B=26,n=weeks.length,max=Math.max.apply(null,weeks.map(function(w){return w.kg}))/1000;
+  var sc=niceScale(0,max||1,4,true),slot=(W-L-R)/n,bw=Math.min(24,slot*0.62);
+  var Y=function(v){return T+(H-T-B)*(1-(v-sc.lo)/(sc.hi-sc.lo))},X=function(i){return L+slot*(i+0.5)};
+  var tip=function(w){return 'Woche ab '+shortDate(w.start)+': '+fmtNum(Math.round(w.kg/100)/10)+' t in '+w.n+(w.n===1?' Einheit':' Einheiten')};
+  var g='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Bewegtes Gewicht pro Woche in Tonnen">';
+  sc.ticks.forEach(function(t){
+    g+='<line class="grid" x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(t).toFixed(1)+'" y2="'+Y(t).toFixed(1)+'"/><text class="tl" x="'+(L-6)+'" y="'+(Y(t)+4).toFixed(1)+'" text-anchor="end">'+esc(fmtNum(t))+'</text>';
+  });
+  var iMax=0;weeks.forEach(function(w,i){if(w.kg>weeks[iMax].kg)iMax=i});
+  weeks.forEach(function(w,i){
+    var x=X(i)-bw/2,y=Y(w.kg/1000),hh=H-B-y,r=Math.min(4,bw/2,hh);
+    g+='<rect class="hit'+(i===n-1?' sel':'')+'" x="'+(X(i)-slot/2).toFixed(1)+'" y="'+(T-14)+'" width="'+slot.toFixed(1)+'" height="'+(H-B-T+14)+'" data-tip="'+esc(tip(w))+'"><title>'+esc(tip(w))+'</title></rect>';
+    if(hh>0.5)g+='<path class="col'+(w.start===cur?' now':'')+'" d="M'+x.toFixed(1)+' '+(H-B)+'V'+(y+r).toFixed(1)+'Q'+x.toFixed(1)+' '+y.toFixed(1)+' '+(x+r).toFixed(1)+' '+y.toFixed(1)+'H'+(x+bw-r).toFixed(1)+'Q'+(x+bw).toFixed(1)+' '+y.toFixed(1)+' '+(x+bw).toFixed(1)+' '+(y+r).toFixed(1)+'V'+(H-B)+'Z"/>';
+    if((i===iMax||i===n-1)&&w.kg>0)g+='<text class="cap" x="'+X(i).toFixed(1)+'" y="'+(y-5).toFixed(1)+'" text-anchor="middle">'+esc(fmtNum(Math.round(w.kg/100)/10))+'</text>';
+  });
+  var idx=[];[0,Math.round((n-1)/2),n-1].forEach(function(v){if(idx.indexOf(v)<0)idx.push(v)});
+  idx.forEach(function(i){g+='<text class="tl" x="'+X(i).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle">'+esc(shortDate(weeks[i].start))+'</text>'});
+  g+='</svg>';
+  h+='<div class="fig">'+g+'<p class="readout" aria-live="polite">'+esc(tip(weeks[n-1]))+'</p></div>';
+  return h+'<p class="small-note">Summe aus Gewicht × Wiederholungen pro Woche, in Tonnen. Rot ist die laufende Woche. Kurzhanteln zählen doppelt (beide Hände), Übungen ohne Gewicht zählen nicht mit. Tippe auf eine Säule für die Woche.</p>';
+}
+/* ---------- Übersicht: Sätze pro Muskelgruppe in den letzten 7 Tagen ---------- */
+function muscleView(){
+  var today=isoDate(new Date()),from=shiftDate(today,-6),cnt={};
+  state.items.forEach(function(x){
+    var m=muscleOf(x),n=0;
+    Object.keys(state.days).forEach(function(d){
+      if(d<from||d>today)return;
+      var en=state.days[d][x.id];if(en)n+=validSets(en.sets).length;
+    });
+    if(n||!x.removed)cnt[m]=(cnt[m]||0)+n;
+  });
+  var rows=Object.keys(cnt).filter(function(m){return m!=='Sonstige'||cnt[m]>0}).sort(function(a,b){return cnt[b]-cnt[a]||MUSCLE_ORDER.indexOf(a)-MUSCLE_ORDER.indexOf(b)})
+    .map(function(m){return {name:m,v:cnt[m]||null,txt:String(cnt[m])}});
+  if(!rows.length)return '';
+  return '<h2>Sätze pro Muskelgruppe</h2><div class="fig">'+barRows(rows)+'</div>'
+    +'<p class="small-note">Gezählt sind alle Sätze der letzten 7 Tage, jede Übung bei ihrer Hauptmuskelgruppe.</p>';
 }
 /* ---------- Vergleichszeitraum: Stand vor 4 Wochen oder erster Eintrag ---------- */
 function spanCut(){return shiftDate(isoDate(new Date()),-28)}
@@ -919,28 +1046,124 @@ function spanSeg(){
     +'<button type="button" data-act="span" data-v="4w" aria-pressed="'+(state.span!=='all')+'">Letzte 4 Wochen</button>'
     +'<button type="button" data-act="span" data-v="all" aria-pressed="'+(state.span==='all')+'">Seit Beginn</button></div>';
 }
-function overview(opts,withData){
-  var rows=opts.filter(function(x){return withData[x.id]});
-  var dayList=Object.keys(state.days).filter(function(d){
-    return Object.keys(state.days[d]).some(function(id){return sessionStats(state.days[d][id].sets)});
-  }).sort();
-  var h='<p class="ovsum">'+dayList.length+(dayList.length===1?' Trainingstag':' Trainingstage')+' · '+rows.length+(rows.length===1?' Übung':' Übungen')+(dayList.length?' · seit '+esc(shortDate(dayList[0])):'')+'</p>';
-  h+=weekView(dayList)+'<h2>Kraft</h2>'+spanSeg();
-  rows.forEach(function(x){
-    var full=series(x.id),l=full[full.length-1];
-    var key=full.every(function(p){return p.st.hasW})?'e1':'reps';
-    var ser=spanSer(full),f=ser[0];
-    var tr='–',cls=' dim';
-    if(ser.length>1&&f.st[key]>0){
-      var pc=(l.st[key]-f.st[key])/f.st[key]*100,r=Math.round(pc);
-      tr=(r>0?'+':r<0?'−':'')+Math.abs(r)+' %';cls=r===0?' dim':'';
-    }
-    h+='<button class="ovrow" type="button" data-act="goex" data-ex="'+esc(x.id)+'"><span><span class="on">'+esc(x.name)+(x.removed?' (ausgeblendet)':'')+'</span>'
-      +'<span class="ol">'+esc(shortDate(l.date))+': '+esc(compactSets(l.sets,isTimed(x)))+'</span></span>'
-      +'<span class="ot'+cls+'">'+tr+'</span></button>';
-  });
+function rankView(opts,withData){
+  var rows=opts.filter(function(x){return withData[x.id]}).map(function(x){
+    var full=series(x.id),l=full[full.length-1],key=full.every(function(p){return p.st.hasW})?'e1':'reps',ser=spanSer(full),f=ser[0],r=null;
+    if(ser.length>1&&f.st[key]>0)r=Math.round((l.st[key]-f.st[key])/f.st[key]*100);
+    return {name:x.name+(x.removed?' (ausgeblendet)':''),v:r,txt:r==null?'–':pctTxt(r),ex:x.id,gone:x.removed&&r==null};
+  }).filter(function(r){return !r.gone});
+  rows.sort(function(a,b){return (b.v==null?-1e9:b.v)-(a.v==null?-1e9:a.v)});
   var ref=state.span==='all'?'vom ersten und vom letzten Eintrag':'von vor 4 Wochen (letzter Eintrag davor, bei neueren Übungen der erste) und vom letzten Eintrag';
-  return h+'<p class="small-note">Die Prozentzahl vergleicht deine geschätzte Maximalkraft (bester Satz: Gewicht × (1 + Wdh. ÷ 30)) '+ref+'. Schweres Gewicht zählt so mehr als viele leichte Wiederholungen. Ohne Gewicht zählen die Wiederholungen. Tippe auf eine Übung für die Kurve.</p>';
+  return '<h2>Kraft-Rangliste</h2>'+spanSeg()+'<div class="fig">'+barRows(rows)+'</div>'
+    +'<p class="small-note">Die Prozentzahl vergleicht deine geschätzte Maximalkraft (bester Satz: Gewicht × (1 + Wdh. ÷ 30)) '+ref+'. Ohne Gewicht zählen die Wiederholungen. Tippe auf eine Übung für ihre Kurven.</p>';
+}
+function overview(opts,withData){
+  var dayList=trainDays(),rows=opts.filter(function(x){return withData[x.id]});
+  var h='<p class="ovsum">'+dayList.length+(dayList.length===1?' Trainingstag':' Trainingstage')+' · '+rows.length+(rows.length===1?' Übung':' Übungen')+(dayList.length?' · seit '+esc(shortDate(dayList[0])):'')+'</p>';
+  if(!dayList.length)return h;
+  return h+sessView(dayList)+rankView(opts,withData)+loadView(dayList)+muscleView();
+}
+/* ---------- Pro Übung: Bestwerte und Satzbild ---------- */
+function exTiles(ex,ser){
+  var hasW=ser.every(function(p){return p.st.hasW}),timed=isTimed(ex),t=[];
+  var best=function(f){var b=null;ser.forEach(function(p){if(!b||f(p)>f(b))b=p});return b};
+  if(hasW){
+    var a=best(function(p){return p.st.e1}),b=best(function(p){return p.st.top});
+    t.push([fmtNum(Math.round(a.st.e1*10)/10)+' kg','Maximalkraft, geschätzt','am '+shortDate(a.date)]);
+    t.push([fmtNum(b.st.top)+' kg','Schwerstes Gewicht','am '+shortDate(b.date)]);
+  }else{
+    var mr=function(p){return Math.max.apply(null,p.sets.map(function(s){return s.r}))},c=best(mr);
+    t.push([mr(c)+(timed?' s':''),timed?'Längster Satz':'Meiste Wdh. in einem Satz','am '+shortDate(c.date)]);
+  }
+  t.push([String(ser.length),ser.length===1?'Eintrag':'Einträge','seit '+shortDate(ser[0].date)]);
+  return '<div class="tiles" style="grid-template-columns:repeat('+t.length+',minmax(0,1fr))">'+t.map(function(x){return '<div class="tile"><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span><span>'+esc(x[2])+'</span></div>'}).join('')+'</div>';
+}
+function setChart(ex,ser){
+  var pts=ser.slice(-12),n=pts.length,timed=isTimed(ex),c=CFG[ex.id],goal=c&&!timed?c.repMax:null;
+  var rows=pts.map(function(p){
+    var top=p.st.top,main=p.sets.filter(function(s){return !p.st.hasW||(s.w||0)>=top-1e-9}),rest=p.sets.filter(function(s){return main.indexOf(s)<0});
+    return {p:p,top:top,first:main[0].r,last:main.length>1?main[main.length-1].r:null,mid:main.slice(1,-1).map(function(s){return s.r}),rest:rest.map(function(s){return s.r})};
+  });
+  var all=[];rows.forEach(function(r){all.push(r.first);if(r.last!=null)all.push(r.last);all=all.concat(r.mid,r.rest)});
+  if(goal)all.push(goal);
+  var W=360,H=220,L=30,R=goal?46:14,T=36,B=26;
+  var sc=niceScale(Math.min.apply(null,all),Math.max.apply(null,all),4,true),slot=(W-L-R)/n;
+  var X=function(i){return L+slot*(i+0.5)},Y=function(v){return T+(H-T-B)*(1-(v-sc.lo)/(sc.hi-sc.lo))};
+  var tip=function(r){return wdDate(r.p.date)+': '+compactSets(r.p.sets,timed)};
+  var g='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Satzbild '+esc(ex.name)+': Wiederholungen je Satz und Einheit">';
+  sc.ticks.forEach(function(t){
+    g+='<line class="grid" x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(t).toFixed(1)+'" y2="'+Y(t).toFixed(1)+'"/><text class="tl" x="'+(L-6)+'" y="'+(Y(t)+4).toFixed(1)+'" text-anchor="end">'+esc(fmtNum(t))+'</text>';
+  });
+  rows.forEach(function(r,i){
+    g+='<rect class="hit'+(i===n-1?' sel':'')+'" x="'+(X(i)-slot/2).toFixed(1)+'" y="'+(T-6)+'" width="'+slot.toFixed(1)+'" height="'+(H-B-T+6)+'" data-tip="'+esc(tip(r))+'"><title>'+esc(tip(r))+'</title></rect>';
+  });
+  if(goal){
+    g+='<line class="goal" x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(goal).toFixed(1)+'" y2="'+Y(goal).toFixed(1)+'"/><text class="tl" x="'+(W-R+5)+'" y="'+(Y(goal)+4).toFixed(1)+'">Ziel '+goal+'</text>';
+  }
+  // Gewichtsstufen: ein Strich über allen Einheiten mit demselben Gewicht, die kg-Zahl am Anfang
+  if(rows.some(function(r){return r.top>0})){
+    var a=0;
+    for(var i=1;i<=n;i++){
+      if(i===n||Math.abs(rows[i].top-rows[a].top)>1e-9){
+        if(rows[a].top>0){
+          g+='<line class="wband" x1="'+(X(a)-slot*0.3).toFixed(1)+'" x2="'+(X(i-1)+slot*0.3).toFixed(1)+'" y1="'+(T-14)+'" y2="'+(T-14)+'"/>'
+            +'<text class="wlab" x="'+(X(a)-slot*0.3).toFixed(1)+'" y="'+(T-20)+'">'+esc(fmtNum(rows[a].top))+'</text>';
+        }
+        a=i;
+      }
+    }
+  }
+  var path=function(k){var d='',on=false;rows.forEach(function(r,i){if(r[k]==null){return}d+=(on?'L':'M')+X(i).toFixed(1)+' '+Y(r[k]).toFixed(1)+' ';on=true});return d};
+  if(n>1){
+    g+='<path class="s1" d="'+path('first')+'"/>';
+    if(rows.filter(function(r){return r.last!=null}).length>1)g+='<path class="sl" d="'+path('last')+'"/>';
+  }
+  rows.forEach(function(r,i){
+    r.rest.forEach(function(v){g+='<circle class="dx" cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="3"/>'});
+    r.mid.forEach(function(v){g+='<circle class="dm" cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="2.5"/>'});
+    // Gleicher Wert in erstem und letztem Satz: roter Punkt im schwarzen, damit beide sichtbar bleiben
+    var eq=r.last!=null&&r.last===r.first;
+    g+='<circle class="d1" cx="'+X(i).toFixed(1)+'" cy="'+Y(r.first).toFixed(1)+'" r="'+(eq?6.5:5.5)+'"/>';
+    if(r.last!=null)g+='<circle class="dl'+(eq?' in':'')+'" cx="'+X(i).toFixed(1)+'" cy="'+Y(r.last).toFixed(1)+'" r="'+(eq?3:4)+'"/>';
+  });
+  var idx=[];[0,Math.round((n-1)/2),n-1].forEach(function(v){if(idx.indexOf(v)<0)idx.push(v)});
+  idx.forEach(function(i){g+='<text class="tl" x="'+X(i).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle">'+esc(shortDate(rows[i].p.date))+'</text>'});
+  g+='</svg>';
+  var hasW=rows.some(function(r){return r.top>0});
+  return '<h2>Satzbild</h2><div class="fig">'+g+'<p class="readout" aria-live="polite">'+esc(tip(rows[n-1]))+'</p>'
+    +'<p class="keys"><span><i></i>Erster Satz</span><span><i class="a"></i>Letzter Satz</span><span><i class="m"></i>Sätze dazwischen</span></p></div>'
+    +'<p class="small-note">'+(timed?'Sekunden':'Wiederholungen')+' je Satz, eine Spalte pro Einheit.'+(hasW?' Die Zahlen oben sind das Gewicht in kg, der Strich zeigt, wie lange du dabei geblieben bist.':'')+(goal?' Erreicht der letzte Satz die Ziellinie, ist die nächste Gewichtsstufe dran.':'')+' Tippe auf eine Spalte für die Sätze.</p>';
+}
+/* ---------- Rekorde: neue Bestwerte in zeitlicher Reihenfolge ---------- */
+function recordList(){
+  var ev=[];
+  state.items.forEach(function(x,xi){
+    var ser=series(x.id);
+    if(ser.length<2)return;
+    var hasW=ser.every(function(p){return p.st.hasW}),bv=-1,bw=-1;
+    ser.forEach(function(p,i){
+      var v=hasW?p.st.e1:Math.max.apply(null,p.sets.map(function(s){return s.r})),w=p.st.top;
+      if(i>0){
+        var isV=v>bv*1.0005+1e-9,isW=hasW&&w>bw+1e-9;
+        if(isV||isW)ev.push({date:p.date,x:x,xi:xi,sets:p.sets,pct:isV&&bv>0?(v/bv-1)*100:null,isW:isW,w:w});
+      }
+      if(v>bv)bv=v;if(w>bw)bw=w;
+    });
+  });
+  ev.sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:a.xi-b.xi});
+  return ev;
+}
+function recView(){
+  var ev=recordList(),cut=spanCut(),recent=ev.filter(function(e){return e.date>cut}).length;
+  if(!ev.length)return '<div class="empty"><b>Noch keine Rekorde</b>Ein Rekord entsteht, sobald du bei einer Übung deinen bisherigen Bestwert übertriffst.</div>';
+  var h='<div class="hero"><span class="big">'+recent+'</span><span class="sub">'+(recent===1?'Rekord':'Rekorde')+' in den letzten 4 Wochen, '+ev.length+' insgesamt</span></div>',last=null;
+  ev.slice(0,60).forEach(function(e){
+    if(e.date!==last){h+='<h2>'+esc(longDate(e.date))+'</h2>';last=e.date}
+    var kind=e.pct!=null&&e.isW?'Bestwert und Höchstgewicht':e.isW?'Höchstgewicht':'Bestwert';
+    h+='<button class="rrow" type="button" data-act="goex" data-ex="'+esc(e.x.id)+'"><span><span class="rn">'+esc(e.x.name)+'</span><span class="rs">'+esc(compactSets(e.sets,isTimed(e.x)))+'</span></span>'
+      +'<span class="rv">'+(e.pct!=null?esc(pctTxt(Math.max(1,Math.round(e.pct)))):esc(fmtNum(e.w))+' kg')+'<small>'+kind+'</small></span></button>';
+  });
+  return h+'<p class="small-note">Bestwert heißt: höhere geschätzte Maximalkraft als je zuvor bei dieser Übung (ohne Gewicht: mehr Wiederholungen in einem Satz). Höchstgewicht heißt: schwerer als je zuvor. Der erste Eintrag einer Übung zählt nicht.</p>';
 }
 function mixView(opts,withData){
   var cut=spanCut();
@@ -1021,10 +1244,12 @@ function viewHist(){
   if(!opts.length)return '<div class="empty"><b>Noch kein Verlauf</b>Sobald du Sätze einträgst, erscheint hier deine Kurve.</div>';
   var tog='<div class="seg" role="group" aria-label="Ansicht">'
     +'<button type="button" data-act="hview" data-v="all" aria-pressed="'+(state.histView==='all')+'">Übersicht</button>'
-    +'<button type="button" data-act="hview" data-v="mix" aria-pressed="'+(state.histView==='mix')+'">Alle Kurven</button>'
-    +'<button type="button" data-act="hview" data-v="ex" aria-pressed="'+(state.histView==='ex')+'">Pro Übung</button></div>';
+    +'<button type="button" data-act="hview" data-v="mix" aria-pressed="'+(state.histView==='mix')+'">Kurven</button>'
+    +'<button type="button" data-act="hview" data-v="ex" aria-pressed="'+(state.histView==='ex')+'">Übung</button>'
+    +'<button type="button" data-act="hview" data-v="rec" aria-pressed="'+(state.histView==='rec')+'">Rekorde</button></div>';
   if(state.histView==='all')return tog+overview(opts,withData);
   if(state.histView==='mix')return tog+mixView(opts,withData);
+  if(state.histView==='rec')return tog+recView();
   if(!opts.some(function(x){return x.id===state.histEx})){
     state.histEx=(opts.filter(function(x){return withData[x.id]})[0]||opts[0]).id;
   }
@@ -1035,6 +1260,7 @@ function viewHist(){
       return '<option value="'+esc(x.id)+'"'+(x.id===ex.id?' selected':'')+'>'+esc(x.name)+(x.removed?' (ausgeblendet)':'')+'</option>';
     }).join('')+'</select>';
   if(!ser.length)return h+'<div class="empty">Für „'+esc(ex.name)+'“ gibt es noch keine Einträge mit Wiederholungen.</div>';
+  h+=exTiles(ex,ser)+setChart(ex,ser)+'<h2>Verlauf</h2>';
   var hasW=ser.some(function(p){return p.st.hasW});
   var metric=hasW?state.metric:'reps';
   if(hasW){
@@ -1125,6 +1351,7 @@ app.addEventListener('click',function(e){
   else if(a==='metric'){state.metric=b.dataset.m;savePrefs();render()}
   else if(a==='hview'){state.histView=b.dataset.v;savePrefs();render()}
   else if(a==='span'){state.span=b.dataset.v==='all'?'all':'4w';savePrefs();render()}
+  else if(a==='sess'){if(b.dataset.date){state.sess=b.dataset.date;render()}}
   else if(a==='legend'){state.hidden[ex]=!state.hidden[ex];render()}
   else if(a==='avgtog'){state.showAvg=!state.showAvg;savePrefs();render()}
   else if(a==='goex'){state.histEx=b.dataset.ex;state.histView='ex';savePrefs();render();window.scrollTo(0,0)}
@@ -1132,6 +1359,14 @@ app.addEventListener('click',function(e){
 });
 app.addEventListener('click',function(e){
   if(e.target&&e.target.id==='datein'&&e.target.showPicker){try{e.target.showPicker()}catch(x){}}
+});
+// Diagramme: Tippen auf eine Spalte zeigt ihre Werte in der Zeile unter dem Diagramm
+app.addEventListener('click',function(e){
+  var t=e.target&&e.target.closest?e.target.closest('[data-tip]'):null,fg=t&&t.closest('.fig'),ro=fg&&fg.querySelector('.readout');
+  if(!ro)return;
+  ro.textContent=t.getAttribute('data-tip');
+  [].forEach.call(fg.querySelectorAll('.hit.sel'),function(n){n.classList.remove('sel')});
+  t.classList.add('sel');
 });
 app.addEventListener('input',function(e){
   var t=e.target;
