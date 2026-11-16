@@ -855,8 +855,7 @@ function overview(opts,withData){
   var h='<p class="ovsum">'+dayList.length+(dayList.length===1?' Trainingstag':' Trainingstage')+' · '+rows.length+(rows.length===1?' Übung':' Übungen')+(dayList.length?' · seit '+esc(shortDate(dayList[0])):'')+'</p>';
   rows.forEach(function(x){
     var ser=series(x.id),f=ser[0],l=ser[ser.length-1];
-    var hasW=ser.some(function(p){return p.st.hasW});
-    var key=hasW?'vol':'reps';
+    var key=ser.every(function(p){return p.st.hasW})?'e1':'reps';
     var vals=ser.map(function(p){return p.st[key]});
     var tr='–',cls=' dim';
     if(ser.length>1&&f.st[key]>0){
@@ -867,11 +866,11 @@ function overview(opts,withData){
       +'<span class="ol">'+esc(shortDate(l.date))+': '+esc(compactSets(l.sets,isTimed(x)))+'</span></span>'
       +'<span class="ot'+cls+'">'+tr+'</span></button>';
   });
-  return h+'<p class="small-note">Die Prozentzahl vergleicht die Trainingsmenge (Gewicht × Wiederholungen aller Sätze) vom ersten und vom letzten Eintrag. Ohne Gewicht zählen die Wiederholungen. Tippe auf eine Übung für die Kurve.</p>';
+  return h+'<p class="small-note">Die Prozentzahl vergleicht deine geschätzte Maximalkraft (bester Satz: Gewicht × (1 + Wdh. ÷ 30)) vom ersten und vom letzten Eintrag. Schweres Gewicht zählt so mehr als viele leichte Wiederholungen. Ohne Gewicht zählen die Wiederholungen. Tippe auf eine Übung für die Kurve.</p>';
 }
 function mixView(opts,withData){
   var rows=opts.filter(function(x){return withData[x.id]}).map(function(x,i){
-    var ser=series(x.id),hasW=ser.some(function(p){return p.st.hasW}),key=hasW?'vol':'reps';
+    var ser=series(x.id),key=ser.every(function(p){return p.st.hasW})?'e1':'reps';
     return {x:x,i:i,ser:ser,key:key,base:ser[0].st[key]};
   }).filter(function(r){return r.base>0});
   var days=Object.keys(state.days).filter(function(d){
@@ -921,7 +920,7 @@ function mixView(opts,withData){
   }
   s+='</svg>';
   var h='<div class="chartbox">'+s+'</div>'
-    +'<p class="small-note">100 % = dein erster Eintrag je Übung (Trainingsmenge: Gewicht × Wiederholungen aller Sätze, ohne Gewicht die Wiederholungen). Tippe auf eine Übung unten, um ihre Linie aus- oder einzublenden.</p>';
+    +'<p class="small-note">100 % = dein erster Eintrag je Übung (geschätzte Maximalkraft aus dem besten Satz, ohne Gewicht die Wiederholungen). Tippe auf eine Übung unten, um ihre Linie aus- oder einzublenden.</p>';
   var ad=avg.length?Math.round(avg[avg.length-1].v-100):null;
   h+='<button class="leg avg" type="button" data-act="avgtog" aria-pressed="'+state.showAvg+'"><i></i><span class="lt">Durchschnitt aller Kurven</span><b>'+(ad==null?'':(ad>0?'+':ad<0?'−':'')+Math.abs(ad)+' %')+'</b></button>';
   rows.forEach(function(r){
