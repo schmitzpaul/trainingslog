@@ -176,6 +176,16 @@ h2{margin:22px 0 8px;font:600 14px var(--font-head);letter-spacing:.1em;text-tra
 .ovrow .ot.dim{color:var(--muted);font-weight:400}
 .ovrow svg{display:block;width:64px;height:24px}
 .spl{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+/* Konstanz: Spalte = Woche, Zeile = Wochentag. Gefuellt = trainiert, Rahmen = geplant, gestrichelt = ausgefallen. */
+.wk{display:grid;gap:5px 0;align-items:center;justify-items:center;padding:12px 8px 10px}
+.wk .wl{justify-self:start;padding-left:4px;font:600 12px var(--font-head);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.wk .wc{width:18px;height:18px;border-radius:5px}
+.wk .wc.on{background:var(--ink)}
+.wk .wc.open{border:1.5px solid var(--muted);opacity:.45}
+.wk .wc.miss{background:var(--soft);border:1.5px dashed var(--muted)}
+.wk .wn{margin-top:3px;font:700 16px/1 var(--font-head);font-variant-numeric:tabular-nums}
+.wk .wn.low{color:var(--muted);font-weight:500}
+.wk .wd{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
 .sess{display:flex;gap:12px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;
   padding:10px 12px;margin-bottom:8px;align-items:baseline}
 .sess .sd{flex:0 0 92px;font-weight:600;font-variant-numeric:tabular-nums}
@@ -311,13 +321,14 @@ var state={
   histEx:prefs.histEx||null,
   metric:['top','e1','vol'].indexOf(prefs.metric)>=0?prefs.metric:'top',
   histView:['ex','mix'].indexOf(prefs.histView)>=0?prefs.histView:'all',
+  span:prefs.span==='all'?'all':'4w',
   hidden:{},showAvg:prefs.showAvg===true,
   autoFor:null,
   gym:false,gi:0,gd:null,
   gstep:[1,2.5,5].indexOf(prefs.gstep)>=0?prefs.gstep:2.5
 };
 function savePrefs(){
-  try{localStorage.setItem(PREF_KEY,JSON.stringify({tab:state.tab,group:state.group,histEx:state.histEx,metric:state.metric,histView:state.histView,gstep:state.gstep,showAvg:state.showAvg}))}catch(e){}
+  try{localStorage.setItem(PREF_KEY,JSON.stringify({tab:state.tab,group:state.group,histEx:state.histEx,metric:state.metric,histView:state.histView,span:state.span,gstep:state.gstep,showAvg:state.showAvg}))}catch(e){}
 }
 
 var app=document.getElementById('app');
@@ -847,16 +858,78 @@ function spark(vals){
   var d=vals.map(function(v,i){return (i?'L':'M')+(2+60*i/(vals.length-1)).toFixed(1)+' '+(22-20*(v-lo)/sp).toFixed(1)}).join(' ');
   return '<svg viewBox="0 0 64 24" aria-hidden="true"><path class="spl" d="'+d+'"/></svg>';
 }
+/* ---------- Konstanz: Trainingstage pro Woche (Montag bis Sonntag) ---------- */
+var WD_SHORT=['Mo','Di','Mi','Do','Fr','Sa','So'];
+function weekStart(iso){var p=iso.split('-').map(Number);return shiftDate(iso,-((new Date(p[0],p[1]-1,p[2]).getDay()+6)%7))}
+function weekStats(dayList,today){
+  var tgt=Object.keys(WEEK_PLAN).length,set={},all=[];
+  dayList.forEach(function(d){set[d]=true});
+  if(!dayList.length)return null;
+  var cur=weekStart(today),s=weekStart(dayList[0]);
+  if(s>cur)return null;
+  while(s<shiftDate(cur,-7*520))s=shiftDate(s,7*52);
+  for(;s<=cur;s=shiftDate(s,7)){
+    var n=0,ds=[];
+    for(var k=0;k<7;k++){var t=!!set[shiftDate(s,k)];ds.push(t);if(t)n++}
+    all.push({start:s,n:n,days:ds});
+  }
+  // Volle Wochen in Folge; die laufende Woche unterbricht die Serie nicht, solange sie noch nicht voll ist
+  var streak=0;
+  for(var i=all.length-1;i>=0;i--){
+    if(all[i].n>=tgt)streak++;
+    else if(i<all.length-1)break;
+  }
+  return {tgt:tgt,cur:all[all.length-1],weeks:all.slice(-8),streak:streak};
+}
+function weekView(dayList){
+  var today=isoDate(new Date()),ws=weekStats(dayList,today);
+  if(!ws)return '';
+  var planned=function(k){return !!WEEK_PLAN[(k+1)%7]};
+  var rowsK=[];
+  for(var k=0;k<7;k++)if(planned(k)||ws.weeks.some(function(w){return w.days[k]}))rowsK.push(k);
+  var sub='diese Woche'+(ws.streak?' · '+ws.streak+(ws.streak===1?' volle Woche':' volle Wochen')+' in Folge':'');
+  var h='<h2>Konstanz</h2><div class="kpi"><span class="big">'+ws.cur.n+' von '+ws.tgt+'</span><span class="sub">'+sub+'</span></div>';
+  var label='Trainingstage pro Woche: '+ws.weeks.map(function(w){return 'Woche ab '+shortDate(w.start)+' '+w.n}).join(', ');
+  var g='<div class="chartbox wk" role="img" aria-label="'+esc(label)+'" style="grid-template-columns:30px repeat('+ws.weeks.length+',1fr)">';
+  rowsK.forEach(function(k){
+    g+='<span class="wl">'+WD_SHORT[k]+'</span>';
+    ws.weeks.forEach(function(w){
+      var d=shiftDate(w.start,k),c=w.days[k]?' on':(planned(k)&&d>=dayList[0])?(d<today?' miss':' open'):'';
+      g+='<span class="wc'+c+'"></span>';
+    });
+  });
+  g+='<span></span>';
+  ws.weeks.forEach(function(w){g+='<span class="wn'+(w.n>=ws.tgt?'':' low')+'">'+w.n+'</span>'});
+  g+='<span></span>';
+  ws.weeks.forEach(function(w){g+='<span class="wd">'+esc(shortDate(w.start))+'</span>'});
+  g+='</div>';
+  return h+g+'<p class="small-note">Jede Spalte ist eine Woche ab Montag, die Zahl darunter zählt die Trainingstage. Gefüllt = trainiert, Rahmen = geplant, gestrichelt = ausgefallen.</p>';
+}
+/* ---------- Vergleichszeitraum: Stand vor 4 Wochen oder erster Eintrag ---------- */
+function spanCut(){return shiftDate(isoDate(new Date()),-28)}
+// 4 Wochen: ab dem letzten Eintrag, der mindestens 4 Wochen alt ist (bei jüngeren Übungen ab dem ersten)
+function spanSer(ser){
+  if(state.span==='all'||!ser.length)return ser;
+  var cut=spanCut(),i0=0;
+  for(var i=0;i<ser.length;i++)if(ser[i].date<=cut)i0=i;
+  return ser.slice(i0);
+}
+function spanSeg(){
+  return '<div class="seg" role="group" aria-label="Vergleichszeitraum">'
+    +'<button type="button" data-act="span" data-v="4w" aria-pressed="'+(state.span!=='all')+'">Letzte 4 Wochen</button>'
+    +'<button type="button" data-act="span" data-v="all" aria-pressed="'+(state.span==='all')+'">Seit Beginn</button></div>';
+}
 function overview(opts,withData){
   var rows=opts.filter(function(x){return withData[x.id]});
   var dayList=Object.keys(state.days).filter(function(d){
     return Object.keys(state.days[d]).some(function(id){return sessionStats(state.days[d][id].sets)});
   }).sort();
   var h='<p class="ovsum">'+dayList.length+(dayList.length===1?' Trainingstag':' Trainingstage')+' · '+rows.length+(rows.length===1?' Übung':' Übungen')+(dayList.length?' · seit '+esc(shortDate(dayList[0])):'')+'</p>';
+  h+=weekView(dayList)+'<h2>Kraft</h2>'+spanSeg();
   rows.forEach(function(x){
-    var ser=series(x.id),f=ser[0],l=ser[ser.length-1];
-    var key=ser.every(function(p){return p.st.hasW})?'e1':'reps';
-    var vals=ser.map(function(p){return p.st[key]});
+    var full=series(x.id),l=full[full.length-1];
+    var key=full.every(function(p){return p.st.hasW})?'e1':'reps';
+    var ser=spanSer(full),f=ser[0];
     var tr='–',cls=' dim';
     if(ser.length>1&&f.st[key]>0){
       var pc=(l.st[key]-f.st[key])/f.st[key]*100,r=Math.round(pc);
@@ -866,24 +939,31 @@ function overview(opts,withData){
       +'<span class="ol">'+esc(shortDate(l.date))+': '+esc(compactSets(l.sets,isTimed(x)))+'</span></span>'
       +'<span class="ot'+cls+'">'+tr+'</span></button>';
   });
-  return h+'<p class="small-note">Die Prozentzahl vergleicht deine geschätzte Maximalkraft (bester Satz: Gewicht × (1 + Wdh. ÷ 30)) vom ersten und vom letzten Eintrag. Schweres Gewicht zählt so mehr als viele leichte Wiederholungen. Ohne Gewicht zählen die Wiederholungen. Tippe auf eine Übung für die Kurve.</p>';
+  var ref=state.span==='all'?'vom ersten und vom letzten Eintrag':'von vor 4 Wochen (letzter Eintrag davor, bei neueren Übungen der erste) und vom letzten Eintrag';
+  return h+'<p class="small-note">Die Prozentzahl vergleicht deine geschätzte Maximalkraft (bester Satz: Gewicht × (1 + Wdh. ÷ 30)) '+ref+'. Schweres Gewicht zählt so mehr als viele leichte Wiederholungen. Ohne Gewicht zählen die Wiederholungen. Tippe auf eine Übung für die Kurve.</p>';
 }
 function mixView(opts,withData){
+  var cut=spanCut();
   var rows=opts.filter(function(x){return withData[x.id]}).map(function(x,i){
-    var ser=series(x.id),key=ser.every(function(p){return p.st.hasW})?'e1':'reps';
+    var full=series(x.id),key=full.every(function(p){return p.st.hasW})?'e1':'reps',ser=spanSer(full);
     return {x:x,i:i,ser:ser,key:key,base:ser[0].st[key]};
-  }).filter(function(r){return r.base>0});
+  }).filter(function(r){
+    // 4 Wochen: Übungen ohne Eintrag im Zeitraum haben keine Kurve
+    return r.base>0&&(state.span==='all'||r.ser[r.ser.length-1].date>cut);
+  });
+  if(!rows.length)return spanSeg()+'<div class="empty">'+(state.span==='all'?'Noch keine Daten für die Überlagerung.':'Keine Einträge in den letzten 4 Wochen.')+'</div>';
+  var d0=rows.reduce(function(a,r){return r.ser[0].date<a?r.ser[0].date:a},rows[0].ser[0].date);
   var days=Object.keys(state.days).filter(function(d){
-    return Object.keys(state.days[d]).some(function(id){return sessionStats(state.days[d][id].sets)});
+    return d>=d0&&Object.keys(state.days[d]).some(function(id){return sessionStats(state.days[d][id].sets)});
   }).sort();
-  if(!rows.length)return '<div class="empty">Noch keine Daten für die Überlagerung.</div>';
   var vis=rows.filter(function(r){return !state.hidden[r.x.id]});
-  // Durchschnitt: pro Trainingstag Mittel der zuletzt bekannten %-Werte aller sichtbaren Übungen (ab ihrem ersten Eintrag)
-  var avg=[];
-  if(state.showAvg&&vis.length){
+  // Durchschnitt: pro Trainingstag Mittel der zuletzt bekannten %-Werte aller sichtbaren, aktiven Übungen (ab ihrem ersten Eintrag).
+  // Ausgeblendete (gestrichene) Übungen zählen nicht mit, sonst bliebe ihr letzter Wert für immer im Mittel stehen.
+  var avg=[],act=vis.filter(function(r){return !r.x.removed});
+  if(state.showAvg&&act.length){
     var cur={};
     days.forEach(function(d){
-      vis.forEach(function(r){r.ser.forEach(function(p){if(p.date===d)cur[r.x.id]=p.st[r.key]/r.base*100})});
+      act.forEach(function(r){r.ser.forEach(function(p){if(p.date===d)cur[r.x.id]=p.st[r.key]/r.base*100})});
       var ks=Object.keys(cur);
       if(ks.length)avg.push({d:d,v:ks.reduce(function(a,k){return a+cur[k]},0)/ks.length});
     });
@@ -895,7 +975,7 @@ function mixView(opts,withData){
   avg.forEach(function(a){all.push(a.v)});
   var sc=niceScale(Math.min.apply(null,all),Math.max.apply(null,all),4,false);
   var Y=function(v){return T+(H-T-B)*(1-(v-sc.lo)/(sc.hi-sc.lo))};
-  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Alle Übungen überlagert, Trainingsmenge in Prozent des ersten Eintrags">';
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Alle Übungen überlagert, geschätzte Maximalkraft in Prozent des Vergleichswerts">';
   sc.ticks.forEach(function(t){
     s+='<line class="grid" x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(t).toFixed(1)+'" y2="'+Y(t).toFixed(1)+'"/>'
       +'<text class="tl" x="'+(L-8)+'" y="'+(Y(t)+4).toFixed(1)+'" text-anchor="end">'+esc(fmtNum(t))+' %</text>';
@@ -904,7 +984,8 @@ function mixView(opts,withData){
   var idx=[];
   [0,Math.round((n-1)/2),n-1].forEach(function(v){if(idx.indexOf(v)<0)idx.push(v)});
   idx.forEach(function(k){
-    s+='<text class="tl" x="'+X(days[k]).toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle">'+esc(shortDate(days[k]))+'</text>';
+    var end=n>1&&k===n-1;
+    s+='<text class="tl" x="'+(end?W-4:X(days[k])).toFixed(1)+'" y="'+(H-9)+'" text-anchor="'+(end?'end':'middle')+'">'+esc(shortDate(days[k]))+'</text>';
   });
   vis.forEach(function(r){
     var col='var(--c'+(r.i%8+1)+')',pts=r.ser.map(function(p){return {x:X(p.date),y:Y(p.st[r.key]/r.base*100),v:p.st[r.key]/r.base*100,d:p.date}});
@@ -919,10 +1000,10 @@ function mixView(opts,withData){
     ap.forEach(function(p){s+='<circle class="avgp" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5"><title>'+esc('Durchschnitt, '+shortDate(p.d)+': '+Math.round(p.v)+' %')+'</title></circle>'});
   }
   s+='</svg>';
-  var h='<div class="chartbox">'+s+'</div>'
-    +'<p class="small-note">100 % = dein erster Eintrag je Übung (geschätzte Maximalkraft aus dem besten Satz, ohne Gewicht die Wiederholungen). Tippe auf eine Übung unten, um ihre Linie aus- oder einzublenden.</p>';
+  var h=spanSeg()+'<div class="chartbox">'+s+'</div>'
+    +'<p class="small-note">100 % = '+(state.span==='all'?'dein erster Eintrag je Übung':'dein Stand vor 4 Wochen je Übung (letzter Eintrag davor, bei neueren Übungen der erste)')+', gemessen an der geschätzten Maximalkraft aus dem besten Satz, ohne Gewicht an den Wiederholungen. Tippe auf eine Übung unten, um ihre Linie aus- oder einzublenden. Der Durchschnitt zählt nur aktive Übungen.</p>';
   var ad=avg.length?Math.round(avg[avg.length-1].v-100):null;
-  h+='<button class="leg avg" type="button" data-act="avgtog" aria-pressed="'+state.showAvg+'"><i></i><span class="lt">Durchschnitt aller Kurven</span><b>'+(ad==null?'':(ad>0?'+':ad<0?'−':'')+Math.abs(ad)+' %')+'</b></button>';
+  h+='<button class="leg avg" type="button" data-act="avgtog" aria-pressed="'+state.showAvg+'"><i></i><span class="lt">Durchschnitt aktiver Übungen</span><b>'+(ad==null?'':(ad>0?'+':ad<0?'−':'')+Math.abs(ad)+' %')+'</b></button>';
   rows.forEach(function(r){
     var l=r.ser[r.ser.length-1],d=Math.round(l.st[r.key]/r.base*100-100);
     h+='<button class="leg" type="button" data-act="legend" data-ex="'+esc(r.x.id)+'" aria-pressed="'+(!state.hidden[r.x.id])+'"><i style="background:var(--c'+(r.i%8+1)+')"></i><span class="lt">'+esc(r.x.name)+'</span><b>'+(d>0?'+':d<0?'−':'')+Math.abs(d)+' %</b></button>';
@@ -1043,6 +1124,7 @@ app.addEventListener('click',function(e){
   else if(a==='restore')setRemoved(id,false);
   else if(a==='metric'){state.metric=b.dataset.m;savePrefs();render()}
   else if(a==='hview'){state.histView=b.dataset.v;savePrefs();render()}
+  else if(a==='span'){state.span=b.dataset.v==='all'?'all':'4w';savePrefs();render()}
   else if(a==='legend'){state.hidden[ex]=!state.hidden[ex];render()}
   else if(a==='avgtog'){state.showAvg=!state.showAvg;savePrefs();render()}
   else if(a==='goex'){state.histEx=b.dataset.ex;state.histView='ex';savePrefs();render();window.scrollTo(0,0)}
