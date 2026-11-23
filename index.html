@@ -1866,7 +1866,10 @@ function gymView(){
       +'<div class="glinks"><span></span><button class="glink" type="button" data-act="gy-exit">Später</button></div></div>';
   }
   if(state.gmode==='done'){
-    return '<div class="gym"><div class="gmid"><p class="gsub">Geschafft</p><h2 class="gname">'+esc(x.name)+'</h2><p class="ghint">'+n+(n===1?' Satz':' S\u00e4tze')+' heute</p></div>'
+    var tmD=isTimed(x),ls0=lastSession(x.id,state.date),td=gSets(x.id);
+    return '<div class="gym"><div class="gmid"><p class="gsub">Geschafft</p><h2 class="gname">'+esc(x.name)+'</h2><p class="ghint">'+n+(n===1?' Satz':' S\u00e4tze')+' heute</p>'
+      +(td.length?'<p class="glast">Heute: '+esc(compactSets(td,tmD))+'</p>':'')
+      +'<p class="glast">'+(ls0?'Letztes Mal: '+esc(compactSets(ls0.sets,tmD)):'Noch kein früherer Eintrag')+'</p></div>'
       +'<button class="gsave" type="button" data-act="gy-exit">Fertig</button></div>';
   }
   if(!state.gd||state.gd.ex!==x.id)state.gd=initDraft(x.id);
@@ -1878,7 +1881,7 @@ function gymView(){
       +'<button class="gsave" type="button" data-act="gy-hstop">Stopp</button>'
       +'<div class="glinks"><button class="glink" type="button" data-act="gy-back">Abbrechen</button><span></span></div></div>';
   }
-  var head='<div>'+dateTag()+'<p class="gsub">Satz '+(n+1)+' von '+planned+'</p><h2 class="gname">'+esc(x.name)+'</h2>'+(rec?'':prevHtml(lastS,n,tm))+'</div>';
+  var head='<div>'+dateTag()+'<p class="gsub">Satz '+(n+1)+' von '+planned+'</p><h2 class="gname">'+esc(x.name)+'</h2></div>';
   if(state.gmode==='entry'||state.gmode==='pause'){
     var rem=Math.max(0,state.restEnd-Date.now());
     if(state.gmode==='pause'){
@@ -1905,11 +1908,11 @@ function gymView(){
     var hz=holdTarget(x,n);
     return '<div class="gym"><div>'+dateTag()+'<p class="gsub">Satz '+(n+1)+' von '+planned+'</p><h2 class="gname">'+esc(x.name)+'</h2></div>'
       +'<div class="gmid"><div class="gtgt"><span><span class="n">'+hz.t+'</span><span class="u">Sekunden Ziel</span></span></div>'
-      +'<p class="glast">'+(hz.last!=null?'Letztes Mal: '+hz.last+' s':'Noch kein früherer Eintrag')+'</p></div>'
+      +'</div>'
       +'<button class="gsave" type="button" data-act="gy-hstart">Start</button>'
       +'<div class="glinks"><button class="glink" type="button" data-act="gy-exit">Zur Übersicht</button><span></span></div></div>';
   }
-  return '<div class="gym">'+head+'<div class="gmid">'+(rec?targetHtml(adjRec(rec,x),n,planned,CFG[x.id])+(lastS?'<p class="glast">Zuletzt: '+esc(compactSets(lastS.sets,isTimed(x)))+'</p>':''):ICON)+'</div>'
+  return '<div class="gym">'+head+'<div class="gmid">'+(rec?targetHtml(adjRec(rec,x),n,planned,CFG[x.id]):ICON)+'</div>'
     +'<button class="gsave" type="button" data-act="gy-done">Satz geschafft</button>'
     +'<div class="glinks"><button class="glink" type="button" data-act="gy-exit">Zur \u00dcbersicht</button><span></span></div></div>';
 }
