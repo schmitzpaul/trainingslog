@@ -1,0 +1,5 @@
+# Personal coach data: never into the public repo
+coach/memory/
+*backup*.json
+node_modules/
+.netlify/

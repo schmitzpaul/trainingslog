@@ -1,0 +1,9 @@
+{
+  "name": "trainingslog",
+  "private": true,
+  "description": "Trainingslog PWA + Coach function",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.14.0",
+    "@netlify/blobs": "^11.1.11"
+  }
+}

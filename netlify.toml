@@ -1,0 +1,24 @@
+[build]
+  publish = "."
+  command = ""
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# Never deliver the function source code or the coach templates as static files
+[[redirects]]
+  from = "/netlify/*"
+  to = "/404"
+  status = 404
+  force = true
+[[redirects]]
+  from = "/coach/templates/*"
+  to = "/404"
+  status = 404
+  force = true
+[[redirects]]
+  from = "/coach/prompt.mjs"
+  to = "/404"
+  status = 404
+  force = true

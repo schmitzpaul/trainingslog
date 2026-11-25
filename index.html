@@ -278,6 +278,15 @@ body{touch-action:manipulation;overscroll-behavior-y:none}
 .bk .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
 .bk .big{font:600 18px var(--font-ui);color:var(--ink)}
 .bk .ok{color:var(--ink)}
+.coach .md{margin-top:12px;padding:12px 14px;border-radius:8px;background:var(--surface);border:1px solid var(--line);font-size:15px;line-height:1.45}
+.coach .md h3{margin:12px 0 4px;font:700 17px/1.2 var(--font-head);letter-spacing:.03em;text-transform:uppercase}
+.coach .md h3:first-child{margin-top:0}
+.coach .md ul{margin:4px 0;padding-left:20px}
+.coach .md p{margin:6px 0;color:var(--ink)}
+.coach details{margin-top:14px}
+.coach summary{cursor:pointer;font-weight:600;color:var(--accent);padding:8px 0}
+.coach input[type=password]{width:100%;height:44px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);padding:0 10px;font:inherit}
+.coach .when{color:var(--muted);font-size:14px;margin-top:8px}
 </style>
 </head>
 <body>
@@ -291,10 +300,12 @@ body{touch-action:manipulation;overscroll-behavior-y:none}
   <div class="tabs" role="tablist" aria-label="Ansicht">
     <button role="tab" id="tab-train" data-tab="train" aria-selected="true">Training</button>
     <button role="tab" id="tab-hist" data-tab="hist" aria-selected="false">Verlauf</button>
+    <button role="tab" id="tab-coach" data-tab="coach" aria-selected="false">Coach</button>
   </div>
   <main id="app"></main>
 </div>
 
+<script src="coach/digest.js"></script>
 <script>
 (function(){
 'use strict';
@@ -701,6 +712,7 @@ function readBackup(file){
     Object.keys(j.docs).forEach(function(id){
       var d=j.docs[id];if(!d||typeof d!=='object')return;
       if(id==='exercises'&&Array.isArray(d.items)){docs[id]=d;ex=d.items.length}
+      else if(id==='coach'){docs[id]=d}
       else if(/^day-\d{4}-\d{2}-\d{2}$/.test(id)){docs[id]=d;if(Object.keys(normEntries(d.entries)).length)days++}
     });
     if(!docs.exercises){bkMsg('In der Datei fehlt die Übungsliste.',true);state.bkPending=null;render();return}
@@ -730,6 +742,122 @@ app.addEventListener('click',function(e){
   else if(a==='bk-import'){bkMsg('');state.bkPending=null;document.getElementById('bkfile').click()}
   else if(a==='bk-apply')applyImport();
   else if(a==='bk-cancel'){state.bkPending=null;bkMsg('');render()}
+});
+
+/* ---------- Coach (KI-Analyse) ---------- */
+var COACH_TOKEN_KEY='trainingslog.coachToken';
+var COACH_URL='/.netlify/functions/coach';
+function coachToken(){try{return localStorage.getItem(COACH_TOKEN_KEY)||''}catch(e){return ''}}
+function coachDoc(){return (store&&store.docs&&store.docs.coach)||null}
+function coachDates(){
+  var today=isoDate(new Date());
+  return Object.keys(state.days).filter(function(d){
+    return d<=today&&Object.keys(state.days[d]).some(function(k){return validSets(state.days[d][k].sets).length});
+  }).sort();
+}
+function coachTarget(){
+  var ds=coachDates();if(!ds.length)return null;
+  return ds.indexOf(state.date)>=0?state.date:ds[ds.length-1];
+}
+function coachDigest(date){
+  var docs={exercises:{items:state.items}};
+  Object.keys(state.days).forEach(function(d){docs['day-'+d]={date:d,entries:state.days[d]}});
+  return window.CoachDigest.buildDigest(docs,{date:date});
+}
+function md(src){
+  var out=[],list=false;
+  var inline=function(t){return esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')};
+  String(src||'').split('\n').forEach(function(line){
+    var l=line.trim(),m;
+    if((m=l.match(/^[-*]\s+(.*)$/))||(m=l.match(/^\d+\.\s+(.*)$/))){
+      if(!list){out.push('<ul>');list=true}
+      out.push('<li>'+inline(m[1])+'</li>');return;
+    }
+    if(list){out.push('</ul>');list=false}
+    if((m=l.match(/^#{1,4}\s+(.*)$/)))out.push('<h3>'+inline(m[1])+'</h3>');
+    else if(l)out.push('<p>'+inline(l)+'</p>');
+  });
+  if(list)out.push('</ul>');
+  return out.join('');
+}
+function viewCoach(){
+  var h='<div class="bk coach"><h2>Coach</h2>';
+  if(!window.CoachDigest)return h+'<div class="note bad">Coach-Modul nicht geladen. Seite neu laden.</div></div>';
+  var tok=coachToken();
+  if(!tok||state.coachSetup){
+    h+='<p>Der Coach analysiert deine Einheit mit Claude. Dafür wird nur eine kurze Zusammenfassung (ca. 3 KB) an deine eigene Netlify-Funktion geschickt, nie dein komplettes Log.</p>'
+      +'<p>Gib einmalig den Zugangscode ein (COACH_TOKEN aus den Netlify-Einstellungen).</p>'
+      +'<input type="password" id="coachtok" autocomplete="off" placeholder="Zugangscode" value="'+esc(tok)+'">'
+      +'<div class="row"><button class="btn primary" type="button" data-act="co-save">Speichern</button>'
+      +(tok?'<button class="btn" type="button" data-act="co-cancel">Abbrechen</button>':'')+'</div>';
+    if(state.coachMsg)h+='<div class="note'+(state.coachBad?' bad':'')+'">'+esc(state.coachMsg)+'</div>';
+    return h+'</div>';
+  }
+  var date=coachTarget(),doc=coachDoc();
+  if(!date)h+='<p>Noch keine Einheit eingetragen.</p>';
+  else h+='<p class="big">Einheit vom '+esc(longDate(date))+'</p>'
+    +'<div class="row"><button class="btn primary" type="button" data-act="co-run"'+(state.coachBusy?' disabled':'')+'>'
+    +(state.coachBusy?'Analysiere … (bis zu 1 Min.)':'Einheit analysieren')+'</button>'
+    +'<button class="btn" type="button" data-act="co-pull"'+(state.coachBusy?' disabled':'')+'>Vom Server laden</button></div>';
+  if(state.coachMsg)h+='<div class="note'+(state.coachBad?' bad':'')+'">'+esc(state.coachMsg)+'</div>';
+  if(doc&&doc.analysis){
+    h+='<p class="when">Letzte Analyse: Einheit vom '+esc(longDate(doc.date))+'</p><div class="md">'+md(doc.analysis)+'</div>';
+  }
+  if(doc&&doc.notes)h+='<details><summary>Coach-Notizen (Gedächtnis)</summary><div class="md">'+md(doc.notes)+'</div></details>';
+  if(date)h+='<details><summary>Was der Coach sieht (Zusammenfassung)</summary><div class="md">'+md(coachDigest(date))+'</div></details>';
+  return h+'<div class="row" style="margin-top:18px"><button class="link" type="button" data-act="co-setup">Zugangscode ändern</button></div></div>';
+}
+function coachSave(d){
+  store.docs.coach={date:d.date||null,analysis:d.analysis||'',notes:d.notes||'',at:Date.now()};
+  try{persist()}catch(e){}
+}
+function coachMsg(t,bad){state.coachMsg=t;state.coachBad=!!bad}
+function coachFail(res,j){
+  if(res&&res.status===401){coachMsg('Zugangscode falsch.',true);state.coachSetup=true}
+  else coachMsg((j&&j.error)||'Analyse fehlgeschlagen.',true);
+}
+function coachRun(){
+  var date=coachTarget();if(!date||state.coachBusy)return;
+  var digest;
+  try{digest=coachDigest(date)}catch(e){coachMsg('Zusammenfassung fehlgeschlagen: '+e.message,true);render();return}
+  state.coachBusy=true;coachMsg('');render();
+  var res;
+  fetch(COACH_URL,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token:coachToken(),date:date,digest:digest})})
+    .then(function(r){res=r;return r.json().catch(function(){return null})})
+    .then(function(j){
+      state.coachBusy=false;
+      if(res.ok&&j&&j.analysis){coachSave(j);coachMsg('')}
+      else coachFail(res,j);
+      if(state.tab==='coach')render();
+    },function(){state.coachBusy=false;coachMsg('Keine Verbindung. Die Analyse braucht Internet.',true);if(state.tab==='coach')render()});
+}
+function coachPull(){
+  if(state.coachBusy)return;
+  state.coachBusy=true;coachMsg('');render();
+  var res;
+  fetch(COACH_URL+'?token='+encodeURIComponent(coachToken()),{cache:'no-store'})
+    .then(function(r){res=r;return r.json().catch(function(){return null})})
+    .then(function(j){
+      state.coachBusy=false;
+      if(res.ok&&j){
+        if(j.analysis||j.notes){coachSave(j);coachMsg('Vom Server geladen.')}
+        else coachMsg('Auf dem Server liegt noch keine Analyse.');
+      }else coachFail(res,j);
+      if(state.tab==='coach')render();
+    },function(){state.coachBusy=false;coachMsg('Keine Verbindung.',true);if(state.tab==='coach')render()});
+}
+app.addEventListener('click',function(e){
+  var b=e.target.closest('[data-act^="co-"]');if(!b)return;
+  var a=b.dataset.act;
+  if(a==='co-save'){
+    var v=(document.getElementById('coachtok').value||'').trim();
+    if(!v){coachMsg('Bitte Zugangscode eingeben.',true);render();return}
+    try{localStorage.setItem(COACH_TOKEN_KEY,v)}catch(err){}
+    state.coachSetup=false;coachMsg('');render();
+  }
+  else if(a==='co-cancel'||a==='co-setup'){state.coachSetup=(a==='co-setup');coachMsg('');render()}
+  else if(a==='co-run')coachRun();
+  else if(a==='co-pull')coachPull();
 });
 
 /* ---------- Auswertung ---------- */
@@ -1291,7 +1419,8 @@ var focusSpec=null,focusNew=false;
 function render(){
   document.getElementById('tab-train').setAttribute('aria-selected',state.tab==='train');
   document.getElementById('tab-hist').setAttribute('aria-selected',state.tab==='hist');
-  app.innerHTML=state.tab==='train'?(state.gym?gymView():viewTrain()):state.tab==='backup'?viewBackup():viewHist();
+  document.getElementById('tab-coach').setAttribute('aria-selected',state.tab==='coach');
+  app.innerHTML=state.tab==='train'?(state.gym?gymView():viewTrain()):state.tab==='backup'?viewBackup():state.tab==='coach'?viewCoach():viewHist();
   document.querySelector('.tabs').hidden=!!(state.gym&&state.tab==='train');
   updatePill();
   if(focusSpec){
