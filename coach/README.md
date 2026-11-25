@@ -12,9 +12,10 @@ The shared source of truth is **Netlify Blobs** (store `coach`). The repo is pub
 live only there and in the git-ignored `coach/memory/`.
 
 ## One-time setup
-1. Netlify → Site configuration → Environment variables (scope: Functions):
-   - `ANTHROPIC_API_KEY`: API key from console.anthropic.com
-   - `COACH_TOKEN`: any long random string (e.g. `openssl rand -hex 24`)
+1. Claude access comes via **Netlify AI Gateway** (no key of your own; billed as Netlify credits, credit-based plan).
+   Alternatively, set your own `ANTHROPIC_API_KEY` as an env var; it takes precedence.
+   Netlify env vars (scope: Functions):
+   - `COACH_TOKEN`: app password (is set; local copy in `coach/memory/COACH_TOKEN.txt`)
    - optional `COACH_MODEL` (default `claude-opus-5-5`; cheaper: `claude-sonnet-5-5`)
 2. Netlify CLI on the Mac: `npm i -g netlify-cli && netlify login && netlify link` (site `tubular-melomakarona-cfffcd`)
 3. Write your profile: `mkdir -p coach/memory && cp coach/templates/*.md coach/memory/`, edit `coach/memory/PROFILE.md`, then

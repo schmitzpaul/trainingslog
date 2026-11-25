@@ -1,7 +1,7 @@
 // Trainingslog Coach: analyses one session using PROFILE.md + NOTES.md + digest.
 // POST /.netlify/functions/coach  {token, digest, date}  → {analysis, notes}
 // GET  /.netlify/functions/coach?token=…                  → {analysis, notes, profile, date} (last saved state)
-// Env: ANTHROPIC_API_KEY, COACH_TOKEN, optional COACH_MODEL (default claude-opus-5-5)
+// Env: COACH_TOKEN, optional COACH_MODEL (default claude-opus-5-5). Claude access comes via Netlify AI Gateway.
 import Anthropic from "@anthropic-ai/sdk";
 import { getStore } from "@netlify/blobs";
 import { timingSafeEqual } from "node:crypto";
@@ -43,14 +43,18 @@ export default async (req) => {
   const [profile, notesOld] = await Promise.all([store.get("PROFILE.md"), store.get("NOTES.md")]);
   const notes = notesOld || TEMPLATE_NOTES;
 
-  const client = new Anthropic({ apiKey: Netlify.env.get("ANTHROPIC_API_KEY"), timeout: 55_000, maxRetries: 0 });
+  // Credentials: Netlify AI Gateway injects ANTHROPIC_API_KEY + ANTHROPIC_BASE_URL automatically
+  // (no key of your own needed; billed as Netlify credits). A key you set yourself takes precedence.
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return json({ error: "Kein Claude-Zugang: AI Gateway nicht aktiv und kein ANTHROPIC_API_KEY gesetzt." }, 503);
+  }
+  const client = new Anthropic({ timeout: 55_000, maxRetries: 0 });
   let msg;
   try {
-    msg = await client.beta.messages.create({
+    // The gateway does not forward beta headers, so: plain messages.create, no beta fallbacks.
+    msg = await client.messages.create({
       model: Netlify.env.get("COACH_MODEL") || "claude-opus-5-5",
       max_tokens: 8000,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
       output_config: { effort: "medium", format: { type: "json_schema", schema: SCHEMA } },
       system: SYSTEM + "\n\n" + OUTPUT_FORMAT,
       messages: [{
