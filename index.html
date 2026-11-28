@@ -21,23 +21,23 @@
 /* Layout: eine schmale Spalte wie ein Notizbuch. Zahlen gross und tabellarisch, Rot nur fuer das, was gerade aktiv ist (Tab, Verlaufslinie, Hauptaktion). */
 :root{
   --bg:#f2f3f0; --surface:#ffffff; --ink:#191d21; --muted:#667079; --line:#dde0da;
-  --accent:#d4351c; --on-accent:#ffffff; --soft:#e8eae5; --bad:#b3261e;
-  --c1:#d4351c; --c2:#1f6feb; --c3:#2a9d8f; --c4:#d99a00; --c5:#8a4fd1; --c6:#5b6770; --c7:#d6338a; --c8:#3a8f2e;
+  --accent:#1a7f37; --on-accent:#ffffff; --soft:#e8eae5; --bad:#b3261e;
+  --c1:#1a7f37; --c2:#1f6feb; --c3:#2a9d8f; --c4:#d99a00; --c5:#8a4fd1; --c6:#5b6770; --c7:#d6338a; --c8:#d4351c;
   --font-ui:'Barlow',system-ui,-apple-system,'Segoe UI',sans-serif;
   --font-head:'Barlow Condensed','Barlow',system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#111315; --surface:#1a1d20; --ink:#eceee9; --muted:#97a0a8; --line:#2a2f33;
-    --accent:#ff6b50; --on-accent:#17110f; --soft:#23272b; --bad:#ff8a80;
-    --c1:#ff6b50; --c2:#6aa6ff; --c3:#4fd1c0; --c4:#ffc83d; --c5:#b98cff; --c6:#a5b0b8; --c7:#ff7ab8; --c8:#7fd46e;
+    --accent:#4cc76a; --on-accent:#17110f; --soft:#23272b; --bad:#ff8a80;
+    --c1:#4cc76a; --c2:#6aa6ff; --c3:#4fd1c0; --c4:#ffc83d; --c5:#b98cff; --c6:#a5b0b8; --c7:#ff7ab8; --c8:#ff6b50;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#111315; --surface:#1a1d20; --ink:#eceee9; --muted:#97a0a8; --line:#2a2f33;
-  --accent:#ff6b50; --on-accent:#17110f; --soft:#23272b; --bad:#ff8a80;
-  --c1:#ff6b50; --c2:#6aa6ff; --c3:#4fd1c0; --c4:#ffc83d; --c5:#b98cff; --c6:#a5b0b8; --c7:#ff7ab8; --c8:#7fd46e;
+  --accent:#4cc76a; --on-accent:#17110f; --soft:#23272b; --bad:#ff8a80;
+  --c1:#4cc76a; --c2:#6aa6ff; --c3:#4fd1c0; --c4:#ffc83d; --c5:#b98cff; --c6:#a5b0b8; --c7:#ff7ab8; --c8:#ff6b50;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
